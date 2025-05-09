@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 import ru.newrav1k.github.orderservice.service.OrderService;
 import ru.newrav1k.github.orderservice.web.dto.OrderPayload;
 
@@ -24,9 +25,14 @@ public class OrdersController {
     }
 
     @PostMapping
-    public ResponseEntity<OrderPayload> createOrder(@RequestBody OrderPayload payload) {
+    public ResponseEntity<OrderPayload> createOrder(@RequestBody OrderPayload payload,
+                                                    UriComponentsBuilder uriBuilder) {
         log.info("Creating new order");
-        return ResponseEntity.ok(this.orderService.createOrder(payload));
+        OrderPayload order = this.orderService.createOrder(payload);
+        return ResponseEntity.created(uriBuilder
+                        .replacePath("/api/orders/{orderId}")
+                        .build(order.id()))
+                .body(order);
     }
 
 }
