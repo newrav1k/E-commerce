@@ -4,12 +4,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import ru.newrav1k.github.orderservice.event.OrderChangedEvent;
+import ru.newrav1k.github.orderservice.event.OrderDeletedEvent;
+import ru.newrav1k.github.orderservice.exception.OrderNotFoundException;
 import ru.newrav1k.github.orderservice.mapper.OrderMapper;
 import ru.newrav1k.github.orderservice.model.entity.Order;
 import ru.newrav1k.github.orderservice.repository.OrderRepository;
@@ -32,6 +36,8 @@ public class OrderService {
 
     private final ObjectMapper objectMapper;
 
+    private final ApplicationEventPublisher publisher;
+
     public Page<OrderPayload> findAll(Pageable pageable) {
         log.info("Finding all orders");
         return orderRepository.findAll(pageable)
@@ -41,7 +47,7 @@ public class OrderService {
     public OrderPayload findById(UUID orderId) {
         log.info("Finding order with id: {}", orderId);
         Order order = this.orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ORDER_NOT_FOUND));
+                .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND));
         return this.orderMapper.toOrderPayload(order);
     }
 
@@ -63,30 +69,36 @@ public class OrderService {
                     order.setTotal(payload.total());
                     return order;
                 })
+                .map(this.orderRepository::save)
                 .map(this.orderMapper::toOrderPayload)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ORDER_NOT_FOUND));
+                .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND));
     }
 
-    @Transactional
+    @Transactional(rollbackFor = IOException.class)
     public OrderPayload updateOrder(UUID orderId, JsonNode patchNode) {
         log.info("Updating order with id: {}", orderId);
         Order order = this.orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ORDER_NOT_FOUND));
+                .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND));
         try {
             this.objectMapper.readerForUpdating(order).readValue(patchNode);
 
-            Order resultOrder = this.orderRepository.save(order);
-            return this.orderMapper.toOrderPayload(resultOrder);
+            this.publisher.publishEvent(new OrderChangedEvent(this, order));
+
+            return this.orderMapper.toOrderPayload(order);
         } catch (IOException exception) {
-            log.warn("Error while updating order with id: {}", orderId, exception);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage());
+            log.error("Error while updating order with id: {}", orderId, exception);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage());
         }
     }
 
     @Transactional
     public void deleteById(UUID orderId) {
         log.info("Deleting order with id: {}", orderId);
-        this.orderRepository.deleteById(orderId);
+        this.orderRepository.findById(orderId)
+                .ifPresent(order -> {
+                    this.publisher.publishEvent(new OrderDeletedEvent(this, order));
+                    this.orderRepository.delete(order);
+                });
     }
 
 }
