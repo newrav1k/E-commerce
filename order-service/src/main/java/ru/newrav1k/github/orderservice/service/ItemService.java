@@ -14,7 +14,7 @@ import ru.newrav1k.github.orderservice.mapper.ItemMapper;
 import ru.newrav1k.github.orderservice.mapper.OrderMapper;
 import ru.newrav1k.github.orderservice.model.entity.Item;
 import ru.newrav1k.github.orderservice.repository.ItemRepository;
-import ru.newrav1k.github.orderservice.web.dto.ItemPayload;
+import ru.newrav1k.github.orderservice.model.dto.ItemPayload;
 
 import java.io.IOException;
 import java.util.UUID;

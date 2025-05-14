@@ -17,7 +17,7 @@ import ru.newrav1k.github.orderservice.exception.OrderNotFoundException;
 import ru.newrav1k.github.orderservice.mapper.OrderMapper;
 import ru.newrav1k.github.orderservice.model.entity.Order;
 import ru.newrav1k.github.orderservice.repository.OrderRepository;
-import ru.newrav1k.github.orderservice.web.dto.OrderPayload;
+import ru.newrav1k.github.orderservice.model.dto.OrderPayload;
 
 import java.io.IOException;
 import java.util.UUID;

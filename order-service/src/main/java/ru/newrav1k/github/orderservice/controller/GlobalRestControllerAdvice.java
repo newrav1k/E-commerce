@@ -1,4 +1,4 @@
-package ru.newrav1k.github.orderservice.web.controller;
+package ru.newrav1k.github.orderservice.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;

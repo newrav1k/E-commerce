@@ -1,4 +1,4 @@
-package ru.newrav1k.github.orderservice.web.dto;
+package ru.newrav1k.github.orderservice.model.dto;
 
 import java.math.BigDecimal;
 import java.util.UUID;

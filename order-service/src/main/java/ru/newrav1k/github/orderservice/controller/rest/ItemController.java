@@ -1,4 +1,4 @@
-package ru.newrav1k.github.orderservice.web.controller;
+package ru.newrav1k.github.orderservice.controller.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.newrav1k.github.orderservice.service.ItemService;
-import ru.newrav1k.github.orderservice.web.dto.ItemPayload;
+import ru.newrav1k.github.orderservice.model.dto.ItemPayload;
 
 import java.util.UUID;
 
