@@ -1,14 +1,35 @@
 package ru.newrav1k.github.orderservice.listener;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 import ru.newrav1k.github.orderservice.event.OrderChangedEvent;
+import ru.newrav1k.github.orderservice.event.OrderCreatedEvent;
 import ru.newrav1k.github.orderservice.event.OrderDeletedEvent;
+import ru.newrav1k.github.orderservice.model.entity.Item;
+import ru.newrav1k.github.orderservice.model.entity.Order;
+import ru.newrav1k.mirea.core.model.event.SagaOrderCreatedEvent;
 
 @Slf4j
-@Service
+@Component
+@RequiredArgsConstructor
 public class OrderEventListener {
+
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    @TransactionalEventListener
+    public void onOrderCreated(OrderCreatedEvent event) {
+        log.info("onOrderCreated: {}", event);
+        Order order = event.getOrder();
+        SagaOrderCreatedEvent sagaOrderCreatedEvent = new SagaOrderCreatedEvent(
+                order.getId(),
+                order.getUserId(),
+                order.getItems().stream().map(Item::getId).toList()
+        );
+        this.kafkaTemplate.send("order-events", sagaOrderCreatedEvent);
+    }
 
     @TransactionalEventListener(classes = OrderDeletedEvent.class)
     public void onOrderDeleted(OrderDeletedEvent event) {
