@@ -61,7 +61,6 @@ public class ItemService {
         log.info("Updating a item with id: {}", itemId);
         return this.itemRepository.findById(itemId)
                 .map(item -> {
-                    item.setOrder(this.orderMapper.toOrder(itemPayload.order()));
                     item.setPrice(itemPayload.price());
                     item.setQuantity(itemPayload.quantity());
                     return item;
