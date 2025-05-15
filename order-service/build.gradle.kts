@@ -26,6 +26,7 @@ repositories {
 val mapStructVersion = "1.6.3"
 
 dependencies {
+    implementation(project(":core"))
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.mapstruct:mapstruct:${mapStructVersion}")

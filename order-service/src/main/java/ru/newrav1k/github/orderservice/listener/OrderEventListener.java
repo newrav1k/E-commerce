@@ -26,7 +26,9 @@ public class OrderEventListener {
         SagaOrderCreatedEvent sagaOrderCreatedEvent = new SagaOrderCreatedEvent(
                 order.getId(),
                 order.getUserId(),
-                order.getItems().stream().map(Item::getId).toList()
+                order.getItems().stream()
+                        .map(Item::getProductId)
+                        .toList()
         );
         this.kafkaTemplate.send("order-events", sagaOrderCreatedEvent);
     }
