@@ -22,7 +22,7 @@ import java.util.UUID;
 @Table(name = "t_order_items", schema = "order_management")
 public class Item extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "order_id", referencedColumnName = "id")
     private Order order;
 

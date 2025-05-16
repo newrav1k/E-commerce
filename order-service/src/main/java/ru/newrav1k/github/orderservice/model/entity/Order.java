@@ -1,5 +1,6 @@
 package ru.newrav1k.github.orderservice.model.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -37,7 +38,7 @@ public class Order extends BaseEntity {
     @Column(name = "total", precision = 10, scale = 2)
     private BigDecimal total;
 
-    @OneToMany(mappedBy = "order")
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<Item> items;
 
 }
