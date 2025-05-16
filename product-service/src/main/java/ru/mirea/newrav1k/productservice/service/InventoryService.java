@@ -62,6 +62,12 @@ public class InventoryService {
     public InventoryPayload save(InventoryPayload inventoryPayload) {
         log.info("Saving inventory {}", inventoryPayload);
         Inventory inventory = this.inventoryRepository.save(this.inventoryMapper.toInventory(inventoryPayload));
+
+        if (inventoryPayload.productId() != null) {
+            Product product = this.productService.findProductById(inventoryPayload.productId());
+            inventory.setProduct(product);
+        }
+
         return this.inventoryMapper.toInventoryPayload(inventory);
     }
 
