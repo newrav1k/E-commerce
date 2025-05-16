@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ru.mirea.newrav1k.productservice.mapper.InventoryMapper;
+import ru.mirea.newrav1k.productservice.model.dto.CreateInventoryRequest;
 import ru.mirea.newrav1k.productservice.model.dto.InventoryPayload;
+import ru.mirea.newrav1k.productservice.model.dto.InventoryResponse;
 import ru.mirea.newrav1k.productservice.model.entity.Inventory;
 import ru.mirea.newrav1k.productservice.model.entity.Product;
 import ru.mirea.newrav1k.productservice.repository.InventoryRepository;
@@ -32,23 +34,23 @@ public class InventoryService {
 
     private final ProductService productService;
 
-    public Page<InventoryPayload> findAll(Pageable pageable) {
+    public Page<InventoryResponse> findAll(Pageable pageable) {
         log.info("Finding all inventories");
         return this.inventoryRepository.findAll(pageable)
-                .map(this.inventoryMapper::toInventoryPayload);
+                .map(this.inventoryMapper::toInventoryResponse);
     }
 
-    public InventoryPayload findById(UUID inventoryId) {
+    public InventoryResponse findById(UUID inventoryId) {
         log.info("Finding inventory with id {}", inventoryId);
         return this.inventoryRepository.findById(inventoryId)
-                .map(this.inventoryMapper::toInventoryPayload)
+                .map(this.inventoryMapper::toInventoryResponse)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Inventory not found"));
     }
 
-    public InventoryPayload findByProductId(UUID productId) {
+    public InventoryResponse findByProductId(UUID productId) {
         log.info("Finding inventory by productId {}", productId);
         return this.inventoryRepository.findByProduct_Id(productId)
-                .map(this.inventoryMapper::toInventoryPayload)
+                .map(this.inventoryMapper::toInventoryResponse)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Inventory with product " + productId + " not found"));
     }
 
@@ -59,20 +61,22 @@ public class InventoryService {
     }
 
     @Transactional
-    public InventoryPayload save(InventoryPayload inventoryPayload) {
-        log.info("Saving inventory {}", inventoryPayload);
-        Inventory inventory = this.inventoryRepository.save(this.inventoryMapper.toInventory(inventoryPayload));
+    public InventoryResponse save(CreateInventoryRequest request) {
+        log.info("Saving inventory {}", request);
+        Inventory inventory = new Inventory();
 
-        if (inventoryPayload.productId() != null) {
-            Product product = this.productService.findProductById(inventoryPayload.productId());
+        if (request.productId() != null) {
+            Product product = this.productService.findProductById(request.productId());
             inventory.setProduct(product);
         }
+        inventory.setQuantity(request.quantity());
+        inventory.setReservedQuantity(request.reservedQuantity());
 
-        return this.inventoryMapper.toInventoryPayload(inventory);
+        return this.inventoryMapper.toInventoryResponse(inventory);
     }
 
     @Transactional
-    public InventoryPayload update(UUID inventoryId, InventoryPayload inventoryPayload) {
+    public InventoryResponse update(UUID inventoryId, InventoryPayload inventoryPayload) {
         log.info("Updating inventory with id {}", inventoryId);
         Inventory inventory = this.inventoryRepository.findById(inventoryId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Inventory not found"));
@@ -84,11 +88,11 @@ public class InventoryService {
         inventory.setQuantity(inventoryPayload.quantity());
         inventory.setReservedQuantity(inventoryPayload.reservedQuantity());
 
-        return this.inventoryMapper.toInventoryPayload(inventory);
+        return this.inventoryMapper.toInventoryResponse(inventory);
     }
 
     @Transactional
-    public InventoryPayload update(UUID inventoryId, JsonNode patchNode) {
+    public InventoryResponse update(UUID inventoryId, JsonNode patchNode) {
         log.info("Updating inventory with id {}", inventoryId);
         Inventory inventory = this.inventoryRepository.findById(inventoryId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Inventory not found"));
@@ -105,7 +109,7 @@ public class InventoryService {
             inventory.setReservedQuantity(patchNode.get("reservedQuantity").asInt());
         }
 
-        return this.inventoryMapper.toInventoryPayload(inventory);
+        return this.inventoryMapper.toInventoryResponse(inventory);
     }
 
     @Transactional

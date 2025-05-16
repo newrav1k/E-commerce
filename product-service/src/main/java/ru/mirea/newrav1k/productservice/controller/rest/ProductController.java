@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.mirea.newrav1k.productservice.model.dto.ProductPayload;
+import ru.mirea.newrav1k.productservice.model.dto.ProductResponse;
 import ru.mirea.newrav1k.productservice.service.ProductService;
 
 import java.util.UUID;
@@ -26,25 +27,25 @@ public class ProductController {
     private final ProductService productService;
 
     @GetMapping
-    public ResponseEntity<ProductPayload> loadProduct(@PathVariable("productId") UUID productId) {
+    public ResponseEntity<ProductResponse> loadProduct(@PathVariable("productId") UUID productId) {
         log.info("Loading product {}", productId);
-        ProductPayload product = this.productService.findById(productId);
+        ProductResponse product = this.productService.findById(productId);
         return ResponseEntity.ok(product);
     }
 
     @PutMapping
-    public ResponseEntity<ProductPayload> updateProduct(@PathVariable("productId") UUID productId,
-                                                        @RequestBody ProductPayload payload) {
+    public ResponseEntity<ProductResponse> updateProduct(@PathVariable("productId") UUID productId,
+                                                         @RequestBody ProductPayload payload) {
         log.info("Updating product {}", productId);
-        ProductPayload result = this.productService.update(productId, payload);
+        ProductResponse result = this.productService.update(productId, payload);
         return ResponseEntity.ok(result);
     }
 
     @PatchMapping
-    public ResponseEntity<ProductPayload> patchProduct(@PathVariable("productId") UUID productId,
-                                                       @RequestBody JsonNode patchNode) {
+    public ResponseEntity<ProductResponse> patchProduct(@PathVariable("productId") UUID productId,
+                                                        @RequestBody JsonNode patchNode) {
         log.info("Updating product {}", productId);
-        ProductPayload result = this.productService.update(productId, patchNode);
+        ProductResponse result = this.productService.update(productId, patchNode);
         return ResponseEntity.ok(result);
     }
 

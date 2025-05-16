@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
+import ru.mirea.newrav1k.productservice.model.dto.CreateProductRequest;
 import ru.mirea.newrav1k.productservice.model.dto.ProductPayload;
+import ru.mirea.newrav1k.productservice.model.dto.ProductResponse;
 import ru.mirea.newrav1k.productservice.service.ProductService;
 
 @Slf4j
@@ -23,15 +25,16 @@ public class ProductsController {
     private final ProductService productService;
 
     @GetMapping
-    public PagedModel<ProductPayload> loadAllProducts(Pageable pageable) {
+    public PagedModel<ProductResponse> loadAllProducts(Pageable pageable) {
         log.info("Loading all products");
         return new PagedModel<>(this.productService.findAll(pageable));
     }
 
     @PostMapping
-    public ResponseEntity<ProductPayload> createProduct(@RequestBody ProductPayload payload, UriComponentsBuilder uriBuilder) {
+    public ResponseEntity<ProductResponse> createProduct(@RequestBody CreateProductRequest request,
+                                                         UriComponentsBuilder uriBuilder) {
         log.info("Creating new product");
-        ProductPayload product = this.productService.create(payload);
+        ProductResponse product = this.productService.create(request);
         return ResponseEntity.created(uriBuilder
                         .replacePath("/api/products/{productId}")
                         .build(product.id()))
