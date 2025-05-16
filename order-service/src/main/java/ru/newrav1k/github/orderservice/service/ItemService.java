@@ -70,7 +70,7 @@ public class ItemService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ITEM_NOT_FOUND));
     }
 
-    @Transactional
+    @Transactional(rollbackFor = IOException.class)
     public ItemPayload updateItem(UUID itemId, JsonNode patchNode) {
         log.info("Updating a item with id: {}", itemId);
         Item item = this.itemRepository.findById(itemId)
