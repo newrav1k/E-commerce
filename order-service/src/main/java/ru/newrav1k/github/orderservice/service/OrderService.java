@@ -16,8 +16,12 @@ import ru.newrav1k.github.orderservice.event.OrderCreatedEvent;
 import ru.newrav1k.github.orderservice.event.OrderDeletedEvent;
 import ru.newrav1k.github.orderservice.exception.OrderNotFoundException;
 import ru.newrav1k.github.orderservice.mapper.OrderMapper;
+import ru.newrav1k.github.orderservice.model.dto.CreateOrderRequest;
 import ru.newrav1k.github.orderservice.model.dto.OrderPayload;
+import ru.newrav1k.github.orderservice.model.dto.OrderResponse;
+import ru.newrav1k.github.orderservice.model.entity.Item;
 import ru.newrav1k.github.orderservice.model.entity.Order;
+import ru.newrav1k.github.orderservice.model.enums.OrderStatus;
 import ru.newrav1k.github.orderservice.repository.OrderRepository;
 
 import java.io.IOException;
@@ -39,17 +43,17 @@ public class OrderService {
 
     private final ApplicationEventPublisher publisher;
 
-    public Page<OrderPayload> findAll(Pageable pageable) {
+    public Page<OrderResponse> findAll(Pageable pageable) {
         log.info("Finding all orders");
         return orderRepository.findAll(pageable)
-                .map(this.orderMapper::toOrderPayload);
+                .map(this.orderMapper::toOrderResponse);
     }
 
-    public OrderPayload findById(UUID orderId) {
+    public OrderResponse findById(UUID orderId) {
         log.info("Finding order with id: {}", orderId);
         Order order = this.orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND));
-        return this.orderMapper.toOrderPayload(order);
+        return this.orderMapper.toOrderResponse(order);
     }
 
     public Order findOrderById(UUID orderId) {
@@ -59,18 +63,32 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderPayload createOrder(OrderPayload payload) {
-        log.info("Creating new order");
-        Order order = this.orderRepository.save(this.orderMapper.toOrder(payload));
+    public OrderResponse createOrder(CreateOrderRequest request) {
+        log.info("Creating new order with request: {}", request);
+        Order order = new Order();
+
+        order.setCustomerId(request.customerId());
+        order.setStatus(OrderStatus.PENDING);
+        order.setItems(
+                request.items()
+                        .stream()
+                        .map(itemRequest -> new Item(
+                                order,
+                                itemRequest.productId(),
+                                itemRequest.quantity(),
+                                itemRequest.price()
+                        )).toList());
+
+        this.orderRepository.save(order);
 
         OrderCreatedEvent orderCreatedEvent = new OrderCreatedEvent(this, order);
         this.publisher.publishEvent(orderCreatedEvent);
 
-        return this.orderMapper.toOrderPayload(order);
+        return this.orderMapper.toOrderResponse(order);
     }
 
     @Transactional
-    public OrderPayload updateOrder(UUID orderId, OrderPayload payload) {
+    public OrderResponse updateOrder(UUID orderId, OrderPayload payload) {
         log.info("Updating order with id: {}", orderId);
         Order order = this.orderRepository.findById(orderId)
                 .map(it -> {
@@ -82,11 +100,11 @@ public class OrderService {
                 .map(this.orderRepository::save)
                 .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND));
         this.publisher.publishEvent(new OrderChangedEvent(this, order));
-        return this.orderMapper.toOrderPayload(order);
+        return this.orderMapper.toOrderResponse(order);
     }
 
     @Transactional(rollbackFor = IOException.class)
-    public OrderPayload updateOrder(UUID orderId, JsonNode patchNode) {
+    public OrderResponse updateOrder(UUID orderId, JsonNode patchNode) {
         log.info("Updating order with id: {}", orderId);
         Order order = this.orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND));
@@ -95,7 +113,7 @@ public class OrderService {
 
             this.publisher.publishEvent(new OrderChangedEvent(this, order));
 
-            return this.orderMapper.toOrderPayload(order);
+            return this.orderMapper.toOrderResponse(order);
         } catch (IOException exception) {
             log.error("Error while updating order with id: {}", orderId, exception);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage());
