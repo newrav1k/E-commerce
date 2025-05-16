@@ -16,8 +16,8 @@ spring:
 product-service:
   kafka:
     topics:
-      orders-event: order-events
-      products-event: product-events
+      order-created: order-created
+      product-reservation: product-reservation
 
 server:
   port: 8082
