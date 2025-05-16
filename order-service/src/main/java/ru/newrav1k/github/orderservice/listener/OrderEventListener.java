@@ -23,17 +23,18 @@ public class OrderEventListener {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    @TransactionalEventListener
+    @TransactionalEventListener(classes = OrderCreatedEvent.class)
     public void onOrderCreated(OrderCreatedEvent event) {
-        log.info("onOrderCreated: {}", event);
+        log.info("Order created event: {}", event);
         Order order = event.getOrder();
         SagaOrderCreationEvent sagaOrderCreationEvent = new SagaOrderCreationEvent(
                 order.getId(),
                 order.getUserId(),
                 order.getItems()
                         .stream()
-                        .map(item -> new ItemInformation(item.getId(), item.getQuantity()))
-                        .toList()
+                        .map(item -> new ItemInformation(item.getProductId(), item.getQuantity()))
+                        .toList(),
+                order.getTotal()
         );
         this.kafkaTemplate.send(this.orderCreatedTopic, sagaOrderCreationEvent);
     }
