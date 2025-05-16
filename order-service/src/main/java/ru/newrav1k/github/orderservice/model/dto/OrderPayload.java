@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record OrderPayload(UUID id,
-                           UUID userId,
+                           UUID customerId,
                            OrderStatus status,
                            BigDecimal total,
                            List<ItemPayload> items) {

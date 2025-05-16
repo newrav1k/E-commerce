@@ -27,8 +27,8 @@ import java.util.UUID;
 @EntityListeners(AuditingEntityListener.class)
 public class Order extends BaseEntity {
 
-    @Column(name = "user_id", nullable = false)
-    private UUID userId;
+    @Column(name = "customer_id", nullable = false)
+    private UUID customerId;
 
     @Column(name = "status")
     @Convert(converter = OrderStatusConverter.class)

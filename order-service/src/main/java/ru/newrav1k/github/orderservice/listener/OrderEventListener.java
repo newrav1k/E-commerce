@@ -29,7 +29,7 @@ public class OrderEventListener {
         Order order = event.getOrder();
         SagaOrderCreationEvent sagaOrderCreationEvent = new SagaOrderCreationEvent(
                 order.getId(),
-                order.getUserId(),
+                order.getCustomerId(),
                 order.getItems()
                         .stream()
                         .map(item -> new ItemInformation(item.getProductId(), item.getQuantity()))

@@ -74,7 +74,7 @@ public class OrderService {
         log.info("Updating order with id: {}", orderId);
         Order order = this.orderRepository.findById(orderId)
                 .map(it -> {
-                    it.setUserId(payload.userId());
+                    it.setCustomerId(payload.customerId());
                     it.setStatus(payload.status());
                     it.setTotal(payload.total());
                     return it;
