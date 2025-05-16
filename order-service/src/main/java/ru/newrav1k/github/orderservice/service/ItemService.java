@@ -12,7 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ru.newrav1k.github.orderservice.mapper.ItemMapper;
 import ru.newrav1k.github.orderservice.mapper.OrderMapper;
+import ru.newrav1k.github.orderservice.model.dto.CreateItemRequest;
+import ru.newrav1k.github.orderservice.model.dto.ItemResponse;
 import ru.newrav1k.github.orderservice.model.entity.Item;
+import ru.newrav1k.github.orderservice.model.entity.Order;
 import ru.newrav1k.github.orderservice.repository.ItemRepository;
 import ru.newrav1k.github.orderservice.model.dto.ItemPayload;
 
@@ -35,29 +38,40 @@ public class ItemService {
 
     private final ObjectMapper objectMapper;
 
-    public Page<ItemPayload> findAll(Pageable pageable) {
+    private final OrderService orderService;
+
+    public Page<ItemResponse> findAll(Pageable pageable) {
         log.info("Finding all items");
         return this.itemRepository.findAll(pageable)
-                .map(this.itemMapper::toItemPayload);
+                .map(this.itemMapper::toItemResponse);
     }
 
-    public ItemPayload findById(UUID itemId) {
+    public ItemResponse findById(UUID itemId) {
         log.info("Finding a item with id: {}", itemId);
         return this.itemRepository.findById(itemId)
-                .map(this.itemMapper::toItemPayload)
+                .map(this.itemMapper::toItemResponse)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ITEM_NOT_FOUND));
     }
 
     @Transactional
-    public ItemPayload createItem(ItemPayload itemPayload) {
+    public ItemResponse createItem(CreateItemRequest request) {
         log.info("Creating new item");
-        Item item = this.itemMapper.toItem(itemPayload);
-        Item result = this.itemRepository.save(item);
-        return this.itemMapper.toItemPayload(result);
+        Item item = new Item();
+
+        Order order = this.orderService.findOrderById(request.orderId());
+
+        item.setOrder(order);
+        item.setProductId(request.productId());
+        item.setQuantity(request.quantity());
+        item.setPrice(request.price());
+
+        this.itemRepository.save(item);
+
+        return this.itemMapper.toItemResponse(item);
     }
 
     @Transactional
-    public ItemPayload updateItem(UUID itemId, ItemPayload itemPayload) {
+    public ItemResponse updateItem(UUID itemId, ItemPayload itemPayload) {
         log.info("Updating a item with id: {}", itemId);
         return this.itemRepository.findById(itemId)
                 .map(item -> {
@@ -66,19 +80,19 @@ public class ItemService {
                     return item;
                 })
                 .map(this.itemRepository::save)
-                .map(this.itemMapper::toItemPayload)
+                .map(this.itemMapper::toItemResponse)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ITEM_NOT_FOUND));
     }
 
     @Transactional(rollbackFor = IOException.class)
-    public ItemPayload updateItem(UUID itemId, JsonNode patchNode) {
+    public ItemResponse updateItem(UUID itemId, JsonNode patchNode) {
         log.info("Updating a item with id: {}", itemId);
         Item item = this.itemRepository.findById(itemId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ITEM_NOT_FOUND));
         try {
             this.objectMapper.readerForUpdating(item).readValue(patchNode);
 
-            return this.itemMapper.toItemPayload(item);
+            return this.itemMapper.toItemResponse(item);
         } catch (IOException exception) {
             log.error("Error while reading patch {}", patchNode, exception);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage());
