@@ -14,10 +14,10 @@ import ru.newrav1k.github.orderservice.mapper.ItemMapper;
 import ru.newrav1k.github.orderservice.mapper.OrderMapper;
 import ru.newrav1k.github.orderservice.model.dto.CreateItemRequest;
 import ru.newrav1k.github.orderservice.model.dto.ItemResponse;
+import ru.newrav1k.github.orderservice.model.dto.UpdateItemRequest;
 import ru.newrav1k.github.orderservice.model.entity.Item;
 import ru.newrav1k.github.orderservice.model.entity.Order;
 import ru.newrav1k.github.orderservice.repository.ItemRepository;
-import ru.newrav1k.github.orderservice.model.dto.ItemPayload;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -71,12 +71,12 @@ public class ItemService {
     }
 
     @Transactional
-    public ItemResponse updateItem(UUID itemId, ItemPayload itemPayload) {
+    public ItemResponse updateItem(UUID itemId, UpdateItemRequest request) {
         log.info("Updating a item with id: {}", itemId);
         return this.itemRepository.findById(itemId)
                 .map(item -> {
-                    item.setPrice(itemPayload.price());
-                    item.setQuantity(itemPayload.quantity());
+                    item.setQuantity(request.quantity());
+                    item.setPrice(request.price());
                     return item;
                 })
                 .map(this.itemRepository::save)

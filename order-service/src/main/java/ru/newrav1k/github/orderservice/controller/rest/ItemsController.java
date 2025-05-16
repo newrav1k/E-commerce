@@ -1,5 +1,6 @@
 package ru.newrav1k.github.orderservice.controller.rest;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -30,7 +31,7 @@ public class ItemsController {
     }
 
     @PostMapping
-    public ResponseEntity<ItemResponse> createItem(@RequestBody CreateItemRequest request,
+    public ResponseEntity<ItemResponse> createItem(@Valid @RequestBody CreateItemRequest request,
                                                    UriComponentsBuilder uriBuilder) {
         log.info("Saving item {}", request);
         ItemResponse item = this.itemService.createItem(request);
