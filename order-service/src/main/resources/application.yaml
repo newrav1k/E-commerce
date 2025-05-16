@@ -13,5 +13,11 @@ spring:
   kafka:
     bootstrap-servers: localhost:9092
 
+order-service:
+  kafka:
+    topics:
+      order-created: order-created
+      product-reservation: product-reservation
+
 server:
   port: 8081

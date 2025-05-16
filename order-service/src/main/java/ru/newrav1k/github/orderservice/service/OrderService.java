@@ -52,6 +52,12 @@ public class OrderService {
         return this.orderMapper.toOrderPayload(order);
     }
 
+    public Order findOrderById(UUID orderId) {
+        log.info("Finding order with id: {}", orderId);
+        return this.orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND));
+    }
+
     @Transactional
     public OrderPayload createOrder(OrderPayload payload) {
         log.info("Creating new order");
