@@ -2,20 +2,24 @@ package ru.newrav1k.github.orderservice.listener;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 import ru.newrav1k.github.orderservice.event.OrderChangedEvent;
 import ru.newrav1k.github.orderservice.event.OrderCreatedEvent;
 import ru.newrav1k.github.orderservice.event.OrderDeletedEvent;
-import ru.newrav1k.github.orderservice.model.entity.Item;
 import ru.newrav1k.github.orderservice.model.entity.Order;
-import ru.newrav1k.mirea.core.model.event.SagaOrderCreatedEvent;
+import ru.newrav1k.mirea.core.model.event.SagaOrderCreationEvent;
+import ru.newrav1k.mirea.core.model.payload.ItemInformation;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OrderEventListener {
+
+    @Value("${order-service.kafka.topics.order-created}")
+    private String orderCreatedTopic;
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
@@ -23,14 +27,15 @@ public class OrderEventListener {
     public void onOrderCreated(OrderCreatedEvent event) {
         log.info("onOrderCreated: {}", event);
         Order order = event.getOrder();
-        SagaOrderCreatedEvent sagaOrderCreatedEvent = new SagaOrderCreatedEvent(
+        SagaOrderCreationEvent sagaOrderCreationEvent = new SagaOrderCreationEvent(
                 order.getId(),
                 order.getUserId(),
-                order.getItems().stream()
-                        .map(Item::getProductId)
+                order.getItems()
+                        .stream()
+                        .map(item -> new ItemInformation(item.getId(), item.getQuantity()))
                         .toList()
         );
-        this.kafkaTemplate.send("order-events", sagaOrderCreatedEvent);
+        this.kafkaTemplate.send(this.orderCreatedTopic, sagaOrderCreationEvent);
     }
 
     @TransactionalEventListener(classes = OrderDeletedEvent.class)
