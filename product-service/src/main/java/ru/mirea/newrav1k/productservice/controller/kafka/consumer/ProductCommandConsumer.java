@@ -18,9 +18,8 @@ import ru.newrav1k.mirea.core.model.event.SagaProductReservationSuccessEvent;
 @Slf4j
 @Component
 @KafkaListener(topics = {
-        "${product-service.kafka.topics.order-created}",
-        "${product-service.kafka.topics.product-reservation}"
-}, groupId = "product-service")
+        "${product-service.kafka.topics.order-created}"
+}, groupId = "${product-service.kafka.group-id}")
 @RequiredArgsConstructor
 public class ProductCommandConsumer {
 

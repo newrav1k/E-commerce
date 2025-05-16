@@ -18,6 +18,7 @@ order-service:
     topics:
       order-created: order-created
       product-reservation: product-reservation
+    group-id: ${spring.application.name}
 
 server:
   port: 8081
