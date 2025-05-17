@@ -25,6 +25,7 @@ import ru.newrav1k.github.orderservice.model.enums.OrderStatus;
 import ru.newrav1k.github.orderservice.repository.OrderRepository;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import static ru.newrav1k.github.orderservice.utils.MessageCode.ORDER_NOT_FOUND;
@@ -78,7 +79,13 @@ public class OrderService {
                                 itemRequest.quantity(),
                                 itemRequest.price()
                         )).toList());
-
+        order.setTotal(
+                request.items()
+                        .stream()
+                        .map(CreateOrderRequest.ItemRequest::price)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+                // TODO: умножение на количество
+        );
         this.orderRepository.save(order);
 
         OrderCreatedEvent orderCreatedEvent = new OrderCreatedEvent(this, order);
