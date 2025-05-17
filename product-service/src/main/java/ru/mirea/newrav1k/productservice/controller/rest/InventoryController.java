@@ -1,6 +1,7 @@
 package ru.mirea.newrav1k.productservice.controller.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -45,7 +46,7 @@ public class InventoryController {
     }
 
     @PostMapping
-    public ResponseEntity<InventoryResponse> createInventory(@RequestBody CreateInventoryRequest request,
+    public ResponseEntity<InventoryResponse> createInventory(@Valid @RequestBody CreateInventoryRequest request,
                                                              UriComponentsBuilder uriBuilder) {
         log.info("Creating a inventory with request: {}", request);
         InventoryResponse inventory = this.inventoryService.save(request);
