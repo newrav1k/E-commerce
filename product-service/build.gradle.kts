@@ -32,6 +32,7 @@ dependencies {
     implementation("org.springframework.kafka:spring-kafka")
     implementation("org.mapstruct:mapstruct:${mapStructVersion}")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-data-elasticsearch")
     compileOnly("org.projectlombok:lombok")
     runtimeOnly("org.postgresql:postgresql")
     annotationProcessor("org.projectlombok:lombok")
