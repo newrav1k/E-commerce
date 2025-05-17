@@ -72,6 +72,8 @@ public class InventoryService {
         inventory.setQuantity(request.quantity());
         inventory.setReservedQuantity(request.reservedQuantity());
 
+        this.inventoryRepository.save(inventory);
+
         return this.inventoryMapper.toInventoryResponse(inventory);
     }
 
