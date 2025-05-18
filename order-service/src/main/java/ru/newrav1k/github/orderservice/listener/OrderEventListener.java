@@ -36,6 +36,7 @@ public class OrderEventListener {
                         .toList(),
                 order.getTotal()
         );
+        // TODO: сервис для отправки сообщений в Kafka
         this.kafkaTemplate.send(this.orderCreatedTopic, sagaOrderCreationEvent);
     }
 

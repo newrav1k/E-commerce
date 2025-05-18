@@ -80,6 +80,9 @@ public class OrderService {
                                 itemRequest.price()
                         )).toList());
         order.setTotal(
+
+                // TODO: API запрос в product-service для получения предварительной стоимости
+
                 request.items()
                         .stream()
                         .map(CreateOrderRequest.ItemRequest::price)

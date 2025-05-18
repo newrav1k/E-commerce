@@ -1,0 +1,11 @@
+{
+  "name": "Бананы",
+  "description": "Описание бананов",
+  "price": 90,
+  "inventories": [
+    {
+      "quantity": 100,
+      "reservedQuantity": 4
+    }
+  ]
+}

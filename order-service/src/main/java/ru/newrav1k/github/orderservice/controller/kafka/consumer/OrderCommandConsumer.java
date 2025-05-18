@@ -41,6 +41,8 @@ public class OrderCommandConsumer {
             }
 
             order.setStatus(OrderStatus.APPROVED);
+
+            // TODO: отправка запроса на оплату в payment-service
         } catch (Exception exception) {
             log.error("Error processing reservation", exception);
 
