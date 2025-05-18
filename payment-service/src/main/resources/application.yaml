@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: payment-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/e-commerce-database
+    username: admin
+    password: password
+    driver-class-name: org.postgresql.Driver
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.yaml
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+  kafka:
+    bootstrap-servers: localhost:9092
+
+payment-service:
+  kafka:
+    topics:
+      # Исходящие события
+      payment-processed: payment.payment.processed.v1 # Результат оплаты
+      payment-failed: payment.payment.failed.v1 # Ошибка оплаты
+
+      # Входящие события
+      payment-process: payment.payment.process.v1 # Для запуска процесса оплаты
+      order-cancelled: order.order.cancelled.v1 # Для компенсаций
+    group-id: ${spring.application.name}
+
+server:
+  port: 8083
