@@ -16,8 +16,13 @@ spring:
 product-service:
   kafka:
     topics:
-      order-created: order-created
-      product-reservation: product-reservation
+      # Исходящие события
+      product-reserved: inventory.product.reserved.v1 # Успешная резервация
+      product-failed: inventory.product.failed.v1 # Ошибка резервации
+
+      # Входящие события
+      order-created: order.order.created.v1 # Для инициации саги
+      order-cancelled: order.order.cancelled.v1 # Для компенсаций
     group-id: ${spring.application.name}
 
 server:

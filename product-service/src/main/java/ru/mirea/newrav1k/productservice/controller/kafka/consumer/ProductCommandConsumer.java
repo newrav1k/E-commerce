@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,13 +20,17 @@ import ru.newrav1k.mirea.core.model.event.SagaProductReservationSuccessEvent;
 @Slf4j
 @Component
 @KafkaListener(topics = {
-        "${product-service.kafka.topics.order-created}"
+        "${product-service.kafka.topics.order-created}",
+        "${product-service.kafka.topics.order-cancelled}"
 }, groupId = "${product-service.kafka.group-id}")
 @RequiredArgsConstructor
 public class ProductCommandConsumer {
 
-    @Value("${product-service.kafka.topics.product-reservation}")
-    private String productReservationTopic;
+    @Value("${product-service.kafka.topics.product-reserved}")
+    private String productReservedTopic;
+
+    @Value("${product-service.kafka.topics.product-failed}")
+    private String productFailedTopic;
 
     private final InventoryService inventoryService;
 
@@ -40,17 +46,22 @@ public class ProductCommandConsumer {
                 inventory.reserveQuantity(product.quantity());
             }
             SagaProductReservationSuccessEvent sagaProductReservationSuccessEvent = new SagaProductReservationSuccessEvent(event.orderId());
-            this.kafkaTemplate.send(this.productReservationTopic, sagaProductReservationSuccessEvent);
+            this.kafkaTemplate.send(this.productReservedTopic, sagaProductReservationSuccessEvent);
         } catch (Exception exception) {
             log.error("Error while processing SagaOrderCreatedEvent", exception);
             SagaProductReservationFailedEvent sagaProductReservationFailedEvent = new SagaProductReservationFailedEvent(
                     event.orderId(),
                     exception.getMessage()
             );
-            this.kafkaTemplate.send(this.productReservationTopic, sagaProductReservationFailedEvent);
+            this.kafkaTemplate.send(this.productFailedTopic, sagaProductReservationFailedEvent);
 
             throw exception;
         }
+    }
+
+    @KafkaHandler(isDefault = true)
+    public void processUnknownEvent(@Header(value = KafkaHeaders.RECEIVED_TOPIC) String topic) {
+        log.warn("Unknown event type from topic: {}", topic);
     }
 
 }
