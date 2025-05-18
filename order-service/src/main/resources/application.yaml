@@ -20,6 +20,7 @@ order-service:
       order-created: order.order.created.v1 # Для инициации саги
       order-confirmed: order.order.confirmed.v1 # Финальное подтверждение
       order-cancelled: order.order.cancelled.v1 # Для компенсаций
+      payment-process: payment.payment.process.v1 # Для запуска процесса оплаты
 
       # Входящие события
       product-reserved: inventory.product.reserved.v1 # Успешная резервация
