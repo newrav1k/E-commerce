@@ -16,8 +16,16 @@ spring:
 order-service:
   kafka:
     topics:
-      order-created: order-created
-      product-reservation: product-reservation
+      # Исходящие события
+      order-created: order.order.created.v1 # Для инициации саги
+      order-confirmed: order.order.confirmed.v1 # Финальное подтверждение
+      order-cancelled: order.order.cancelled.v1 # Для компенсаций
+
+      # Входящие события
+      product-reserved: inventory.product.reserved.v1 # Успешная резервация
+      product-failed: inventory.product.failed.v1 # Ошибка резервации
+      payment-processed: payment.payment.processed.v1 # Результат оплаты
+      payment-failed: payment.payment.failed.v1 # Ошибка оплаты
     group-id: ${spring.application.name}
 
 server:
