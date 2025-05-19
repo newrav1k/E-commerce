@@ -33,8 +33,7 @@ public class OrderEventListener {
                 order.getItems()
                         .stream()
                         .map(item -> new ItemInformation(item.getProductId(), item.getQuantity()))
-                        .toList(),
-                order.getTotal()
+                        .toList()
         );
         // TODO: сервис для отправки сообщений в Kafka
         this.kafkaTemplate.send(this.orderCreatedTopic, sagaOrderCreationEvent);
