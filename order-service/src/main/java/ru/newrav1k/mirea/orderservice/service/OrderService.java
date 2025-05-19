@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import ru.newrav1k.mirea.core.model.payload.ProductResponse;
 import ru.newrav1k.mirea.orderservice.event.OrderChangedEvent;
 import ru.newrav1k.mirea.orderservice.event.OrderCreatedEvent;
 import ru.newrav1k.mirea.orderservice.event.OrderDeletedEvent;
@@ -23,9 +24,13 @@ import ru.newrav1k.mirea.orderservice.model.entity.Item;
 import ru.newrav1k.mirea.orderservice.model.entity.Order;
 import ru.newrav1k.mirea.orderservice.model.enums.OrderStatus;
 import ru.newrav1k.mirea.orderservice.repository.OrderRepository;
+import ru.newrav1k.mirea.orderservice.service.client.ProductClient;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static ru.newrav1k.mirea.orderservice.utils.MessageCode.ORDER_NOT_FOUND;
@@ -43,6 +48,8 @@ public class OrderService {
     private final ObjectMapper objectMapper;
 
     private final ApplicationEventPublisher publisher;
+
+    private final ProductClient productClient;
 
     public Page<OrderResponse> findAll(Pageable pageable) {
         log.info("Finding all orders");
@@ -68,27 +75,17 @@ public class OrderService {
         log.info("Creating new order with request: {}", request);
         Order order = new Order();
 
+        Map<UUID, ProductResponse> products = new HashMap<>();
+        for (var item : request.items()) {
+            ProductResponse response = this.productClient.findProductById(item.productId());
+            products.put(item.productId(), response);
+        }
+
         order.setCustomerId(request.customerId());
         order.setStatus(OrderStatus.PENDING);
-        order.setItems(
-                request.items()
-                        .stream()
-                        .map(itemRequest -> new Item(
-                                order,
-                                itemRequest.productId(),
-                                itemRequest.quantity(),
-                                itemRequest.price()
-                        )).toList());
-        order.setTotal(
+        order.setItems(buildItems(order, products, request.items()));
+        order.setTotal(calculateTotalPrice(products, request.items()));
 
-                // TODO: API запрос в product-service для получения предварительной стоимости
-
-                request.items()
-                        .stream()
-                        .map(CreateOrderRequest.ItemRequest::price)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add)
-                // TODO: умножение на количество
-        );
         this.orderRepository.save(order);
 
         OrderCreatedEvent orderCreatedEvent = new OrderCreatedEvent(this, order);
@@ -138,6 +135,29 @@ public class OrderService {
                     this.publisher.publishEvent(new OrderDeletedEvent(this, order));
                     this.orderRepository.delete(order);
                 });
+    }
+
+    private List<Item> buildItems(Order order,
+                                  Map<UUID, ProductResponse> products,
+                                  List<CreateOrderRequest.ItemRequest> items) {
+        log.info("Building list of order items");
+        return items.stream()
+                .map(item -> new Item(order,
+                        item.productId(),
+                        item.quantity(),
+                        products.get(item.productId()).price())
+                ).toList();
+    }
+
+    public BigDecimal calculateTotalPrice(Map<UUID, ProductResponse> products,
+                                          List<CreateOrderRequest.ItemRequest> items) {
+        log.info("Calculating total of orders");
+        BigDecimal total = BigDecimal.ZERO;
+        for (var item : items) {
+            ProductResponse response = products.get(item.productId());
+            total = total.add(response.price().multiply(BigDecimal.valueOf(item.quantity())));
+        }
+        return total;
     }
 
 }
