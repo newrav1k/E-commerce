@@ -4,6 +4,8 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
 }
 
+val mapStructVersion = "1.6.3"
+
 group = "ru.mirea.newrav1k"
 version = "0.0.1-SNAPSHOT"
 
@@ -23,8 +25,6 @@ repositories {
     mavenCentral()
 }
 
-val mapStructVersion = "1.6.3"
-
 dependencies {
     implementation(project(":core"))
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -32,7 +32,6 @@ dependencies {
     implementation("org.springframework.kafka:spring-kafka")
     implementation("org.mapstruct:mapstruct:${mapStructVersion}")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springframework.boot:spring-boot-starter-data-elasticsearch")
     compileOnly("org.projectlombok:lombok")
     runtimeOnly("org.postgresql:postgresql")
     annotationProcessor("org.projectlombok:lombok")
