@@ -4,6 +4,9 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
 }
 
+val springCloudVersion by extra("2024.0.1")
+val mapStructVersion = "1.6.3"
+
 group = "ru.newrav1k.github"
 version = "0.0.1-SNAPSHOT"
 
@@ -23,8 +26,6 @@ repositories {
     mavenCentral()
 }
 
-val mapStructVersion = "1.6.3"
-
 dependencies {
     implementation(project(":core"))
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -32,6 +33,7 @@ dependencies {
     implementation("org.mapstruct:mapstruct:${mapStructVersion}")
     implementation("org.springframework.kafka:spring-kafka")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
     compileOnly("org.projectlombok:lombok")
     runtimeOnly("org.postgresql:postgresql")
     annotationProcessor("org.projectlombok:lombok")
@@ -39,6 +41,12 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.kafka:spring-kafka-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:$springCloudVersion")
+    }
 }
 
 tasks.withType<Test> {
