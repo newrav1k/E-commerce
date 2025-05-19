@@ -1,7 +1,6 @@
 package ru.mirea.newrav1k.productservice.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -10,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import ru.mirea.newrav1k.productservice.exception.InventoryNotFoundException;
 import ru.mirea.newrav1k.productservice.mapper.InventoryMapper;
 import ru.mirea.newrav1k.productservice.model.dto.CreateInventoryRequest;
 import ru.mirea.newrav1k.productservice.model.dto.InventoryPayload;
@@ -20,6 +20,8 @@ import ru.mirea.newrav1k.productservice.repository.InventoryRepository;
 
 import java.util.UUID;
 
+import static ru.mirea.newrav1k.productservice.utils.MessageCode.INVENTORY_NOT_FOUND;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -29,8 +31,6 @@ public class InventoryService {
     private final InventoryRepository inventoryRepository;
 
     private final InventoryMapper inventoryMapper;
-
-    private final ObjectMapper objectMapper;
 
     private final ProductService productService;
 
@@ -44,20 +44,20 @@ public class InventoryService {
         log.info("Finding inventory with id {}", inventoryId);
         return this.inventoryRepository.findById(inventoryId)
                 .map(this.inventoryMapper::toInventoryResponse)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Inventory not found"));
+                .orElseThrow(() -> new InventoryNotFoundException(INVENTORY_NOT_FOUND));
     }
 
     public InventoryResponse findByProductId(UUID productId) {
         log.info("Finding inventory by productId {}", productId);
         return this.inventoryRepository.findByProduct_Id(productId)
                 .map(this.inventoryMapper::toInventoryResponse)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Inventory with product " + productId + " not found"));
+                .orElseThrow(() -> new InventoryNotFoundException(INVENTORY_NOT_FOUND));
     }
 
     public Inventory findInventoryByProductId(UUID productId) {
         log.info("Finding inventory by productId {}", productId);
         return this.inventoryRepository.findByProduct_Id(productId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Inventory with product " + productId + " not found"));
+                .orElseThrow(() -> new InventoryNotFoundException(INVENTORY_NOT_FOUND));
     }
 
     @Transactional
@@ -81,7 +81,7 @@ public class InventoryService {
     public InventoryResponse update(UUID inventoryId, InventoryPayload inventoryPayload) {
         log.info("Updating inventory with id {}", inventoryId);
         Inventory inventory = this.inventoryRepository.findById(inventoryId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Inventory not found"));
+                .orElseThrow(() -> new InventoryNotFoundException(INVENTORY_NOT_FOUND));
 
         if (inventoryPayload.productId() != null) {
             Product product = this.productService.findProductById(inventoryPayload.productId());
@@ -97,7 +97,7 @@ public class InventoryService {
     public InventoryResponse update(UUID inventoryId, JsonNode patchNode) {
         log.info("Updating inventory with id {}", inventoryId);
         Inventory inventory = this.inventoryRepository.findById(inventoryId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Inventory not found"));
+                .orElseThrow(() -> new InventoryNotFoundException(INVENTORY_NOT_FOUND));
 
         if (patchNode.has("productId")) {
             updateProductFromPatch(inventory, patchNode);

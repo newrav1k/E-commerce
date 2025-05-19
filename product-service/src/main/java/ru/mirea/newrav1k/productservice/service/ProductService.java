@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import ru.mirea.newrav1k.productservice.exception.ProductNotFoundException;
 import ru.mirea.newrav1k.productservice.mapper.ProductMapper;
 import ru.mirea.newrav1k.productservice.model.dto.CreateProductRequest;
 import ru.mirea.newrav1k.productservice.model.dto.ProductPayload;
@@ -20,6 +21,8 @@ import ru.mirea.newrav1k.productservice.model.enums.ProductStatus;
 import ru.mirea.newrav1k.productservice.repository.ProductRepository;
 
 import java.util.UUID;
+
+import static ru.mirea.newrav1k.productservice.utils.MessageCode.PRODUCT_NOT_FOUND;
 
 @Slf4j
 @Service
@@ -43,13 +46,13 @@ public class ProductService {
         log.info("Finding product by id: {}", productId);
         return this.productRepository.findById(productId)
                 .map(this.productMapper::toProductResponse)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+                .orElseThrow(() -> new ProductNotFoundException(PRODUCT_NOT_FOUND));
     }
 
     public Product findProductById(UUID productId) {
         log.info("Finding product by id: {}", productId);
         return this.productRepository.findById(productId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+                .orElseThrow(() -> new ProductNotFoundException(PRODUCT_NOT_FOUND));
     }
 
     @Transactional
@@ -88,14 +91,14 @@ public class ProductService {
                 })
                 .map(this.productRepository::save)
                 .map(this.productMapper::toProductResponse)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+                .orElseThrow(() -> new ProductNotFoundException(PRODUCT_NOT_FOUND));
     }
 
     @Transactional
     public ProductResponse update(UUID productId, JsonNode patchNode) {
         log.info("Updating product: {}", patchNode);
         Product product = this.productRepository.findById(productId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+                .orElseThrow(() -> new ProductNotFoundException(PRODUCT_NOT_FOUND));
         try {
             this.objectMapper.readerForUpdating(product).readValue(patchNode);
 
