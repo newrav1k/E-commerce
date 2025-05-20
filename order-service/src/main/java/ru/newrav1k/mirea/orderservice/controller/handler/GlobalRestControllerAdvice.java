@@ -1,6 +1,7 @@
 package ru.newrav1k.mirea.orderservice.controller.handler;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -12,6 +13,7 @@ import ru.newrav1k.mirea.orderservice.exception.OrderNotFoundException;
 
 import java.util.Locale;
 
+@Slf4j
 @RestControllerAdvice
 @RequiredArgsConstructor
 public class GlobalRestControllerAdvice {
@@ -20,11 +22,13 @@ public class GlobalRestControllerAdvice {
 
     @ExceptionHandler(OrderNotFoundException.class)
     public ResponseEntity<ProblemDetail> handleOrderNotFoundException(OrderNotFoundException exception, Locale locale) {
+        log.warn("Order not found", exception);
         return handleException(exception, HttpStatus.NOT_FOUND, locale);
     }
 
     @ExceptionHandler(ItemNotFoundException.class)
     public ResponseEntity<ProblemDetail> handleItemNotFoundException(ItemNotFoundException exception, Locale locale) {
+        log.warn("Item not found", exception);
         return handleException(exception, HttpStatus.NOT_FOUND, locale);
     }
 
