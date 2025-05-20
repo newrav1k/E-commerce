@@ -2,46 +2,54 @@ package ru.newrav1k.mirea.orderservice.listener;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
+import ru.newrav1k.mirea.core.model.payload.ItemInformation;
+import ru.newrav1k.mirea.orderservice.controller.kafka.producer.OrderCommandProducer;
+import ru.newrav1k.mirea.orderservice.event.OrderCancelledEvent;
 import ru.newrav1k.mirea.orderservice.event.OrderChangedEvent;
 import ru.newrav1k.mirea.orderservice.event.OrderCreatedEvent;
-import ru.newrav1k.mirea.orderservice.event.OrderDeletedEvent;
 import ru.newrav1k.mirea.orderservice.model.entity.Order;
-import ru.newrav1k.mirea.core.model.event.SagaOrderCreationEvent;
-import ru.newrav1k.mirea.core.model.payload.ItemInformation;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OrderEventListener {
 
-    @Value("${order-service.kafka.topics.order-created}")
-    private String orderCreatedTopic;
-
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final OrderCommandProducer orderCommandProducer;
 
     @TransactionalEventListener(classes = OrderCreatedEvent.class)
     public void onOrderCreated(OrderCreatedEvent event) {
         log.info("Order created event: {}", event);
         Order order = event.getOrder();
-        SagaOrderCreationEvent sagaOrderCreationEvent = new SagaOrderCreationEvent(
+
+        this.orderCommandProducer.sendOrderCreatedProcess(
                 order.getId(),
                 order.getCustomerId(),
+                order.getItems()
+                        .stream()
+                        .map(item -> new ItemInformation(
+                                item.getProductId(),
+                                item.getQuantity()
+                        ))
+                        .toList()
+        );
+    }
+
+    @TransactionalEventListener(classes = OrderCancelledEvent.class)
+    public void onOrderCancelled(OrderCancelledEvent event) {
+        log.info("Order cancelled event: {}", event);
+        Order order = event.getOrder();
+
+        this.orderCommandProducer.sendOrderCancelledProcess(
+                order.getId(),
+                order.getCustomerId(),
+                order.getTotal(),
                 order.getItems()
                         .stream()
                         .map(item -> new ItemInformation(item.getProductId(), item.getQuantity()))
                         .toList()
         );
-        // TODO: сервис для отправки сообщений в Kafka
-        this.kafkaTemplate.send(this.orderCreatedTopic, sagaOrderCreationEvent);
-    }
-
-    @TransactionalEventListener(classes = OrderDeletedEvent.class)
-    public void onOrderDeleted(OrderDeletedEvent event) {
-        log.info("Order deleted event: {}", event);
     }
 
     @TransactionalEventListener(classes = OrderChangedEvent.class)

@@ -12,9 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import ru.newrav1k.mirea.core.model.payload.ProductResponse;
+import ru.newrav1k.mirea.orderservice.event.OrderCancelledEvent;
 import ru.newrav1k.mirea.orderservice.event.OrderChangedEvent;
 import ru.newrav1k.mirea.orderservice.event.OrderCreatedEvent;
-import ru.newrav1k.mirea.orderservice.event.OrderDeletedEvent;
 import ru.newrav1k.mirea.orderservice.exception.OrderNotFoundException;
 import ru.newrav1k.mirea.orderservice.mapper.OrderMapper;
 import ru.newrav1k.mirea.orderservice.model.dto.CreateOrderRequest;
@@ -128,12 +128,12 @@ public class OrderService {
     }
 
     @Transactional
-    public void deleteById(UUID orderId) {
+    public void cancelById(UUID orderId) {
         log.info("Deleting order with id: {}", orderId);
         this.orderRepository.findById(orderId)
                 .ifPresent(order -> {
-                    this.publisher.publishEvent(new OrderDeletedEvent(this, order));
-                    this.orderRepository.delete(order);
+                    this.publisher.publishEvent(new OrderCancelledEvent(this, order));
+                    order.setStatus(OrderStatus.CANCELLED);
                 });
     }
 

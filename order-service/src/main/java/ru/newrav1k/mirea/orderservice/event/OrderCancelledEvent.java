@@ -7,14 +7,14 @@ import ru.newrav1k.mirea.orderservice.model.entity.Order;
 import java.io.Serial;
 
 @Getter
-public class OrderDeletedEvent extends ApplicationEvent {
+public class OrderCancelledEvent extends ApplicationEvent {
 
     @Serial
     private static final long serialVersionUID = -1226572183514663109L;
 
     private final Order order;
 
-    public OrderDeletedEvent(Object source, Order order) {
+    public OrderCancelledEvent(Object source, Order order) {
         super(source);
         this.order = order;
     }
