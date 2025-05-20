@@ -1,8 +1,11 @@
 package ru.mirea.newrav1k.paymentservice.model.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -24,8 +27,9 @@ import java.util.UUID;
 @Table(name = "t_payments", schema = "payment_management")
 public class PaymentTransaction extends BaseEntity {
 
-    @Column(name = "customer_id", nullable = false)
-    private UUID customerId;
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "source_bank_id", referencedColumnName = "id")
+    private BankAccount sourceBankAccount;
 
     @Column(name = "order_id", nullable = false)
     private UUID orderId;
