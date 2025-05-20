@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import ru.mirea.newrav1k.productservice.model.entity.Inventory;
 import ru.mirea.newrav1k.productservice.service.InventoryService;
+import ru.newrav1k.mirea.core.model.event.SagaCreationCancelledEvent;
 import ru.newrav1k.mirea.core.model.event.SagaOrderCreationEvent;
 import ru.newrav1k.mirea.core.model.event.SagaProductReservationFailedEvent;
 import ru.newrav1k.mirea.core.model.event.SagaProductReservationSuccessEvent;
@@ -32,6 +33,8 @@ public class ProductCommandConsumer {
     @Value("${product-service.kafka.topics.product-failed}")
     private String productFailedTopic;
 
+    // TODO: вынести отправку событий в производителя событий
+
     private final InventoryService inventoryService;
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
@@ -45,6 +48,7 @@ public class ProductCommandConsumer {
                 Inventory inventory = this.inventoryService.findInventoryByProductId(product.productId());
                 inventory.reserveQuantity(product.quantity());
             }
+            // TODO: подсчёт финальной суммы заказа
             SagaProductReservationSuccessEvent sagaProductReservationSuccessEvent = new SagaProductReservationSuccessEvent(event.orderId());
             this.kafkaTemplate.send(this.productReservedTopic, sagaProductReservationSuccessEvent);
         } catch (Exception exception) {
@@ -54,6 +58,22 @@ public class ProductCommandConsumer {
                     exception.getMessage()
             );
             this.kafkaTemplate.send(this.productFailedTopic, sagaProductReservationFailedEvent);
+
+            throw exception;
+        }
+    }
+
+    @KafkaHandler
+    @Transactional(rollbackFor = {Exception.class})
+    public void processCancelledOrder(@Payload SagaCreationCancelledEvent event) {
+        log.info("Received SagaProductReservationSuccessEvent: {}", event);
+        try {
+            for (var item : event.products()) {
+                Inventory inventory = this.inventoryService.findInventoryByProductId(item.productId());
+                inventory.unreserveQuantity(item.quantity());
+            }
+        } catch (Exception exception) {
+            log.error("Error while processing SagaProductReservationSuccessEvent", exception);
 
             throw exception;
         }
