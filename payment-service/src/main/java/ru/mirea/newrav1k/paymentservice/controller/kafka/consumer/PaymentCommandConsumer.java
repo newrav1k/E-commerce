@@ -29,7 +29,7 @@ public class PaymentCommandConsumer {
         log.warn("Processing payment: {}", event);
         this.bankAccountService.substanceAmount(event.customerId(), event.orderId(), event.total());
 
-        this.paymentCommandProducer.processSuccessPayment(event.customerId(), event.orderId(), event.total());
+        this.paymentCommandProducer.processSuccessPayment(event.orderId(), event.customerId(), event.total());
     }
 
     @KafkaHandler
