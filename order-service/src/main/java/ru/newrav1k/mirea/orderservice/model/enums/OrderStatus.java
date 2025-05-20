@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum OrderStatus {
-    PENDING, APPROVED, REJECTED, PAID;
+    PENDING, APPROVED, REJECTED, PAID, CANCELLED;
 
     public static OrderStatus fromString(String status) {
         for (OrderStatus orderStatus : OrderStatus.values()) {
