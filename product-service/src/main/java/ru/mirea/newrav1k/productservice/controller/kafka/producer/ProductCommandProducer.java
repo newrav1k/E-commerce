@@ -1,0 +1,38 @@
+package ru.mirea.newrav1k.productservice.controller.kafka.producer;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Component;
+import ru.newrav1k.mirea.core.model.event.SagaProductReservationFailedEvent;
+import ru.newrav1k.mirea.core.model.event.SagaProductReservationSuccessEvent;
+
+import java.util.UUID;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class ProductCommandProducer {
+
+    @Value("${product-service.kafka.topics.product-reserved}")
+    private String productReservedTopic;
+
+    @Value("${product-service.kafka.topics.product-failed}")
+    private String productFailedTopic;
+
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    public void processSuccessfulReserved(UUID orderId, UUID customerId) {
+        log.info("Sending product reserved event");
+        SagaProductReservationSuccessEvent event = new SagaProductReservationSuccessEvent(orderId, customerId);
+        this.kafkaTemplate.send(this.productReservedTopic, event);
+    }
+
+    public void processFailureReserved(UUID orderId, UUID customerId, String reason) {
+        log.info("Sending product failed event");
+        SagaProductReservationFailedEvent event = new SagaProductReservationFailedEvent(orderId, customerId, reason);
+        this.kafkaTemplate.send(this.productFailedTopic, event);
+    }
+
+}
