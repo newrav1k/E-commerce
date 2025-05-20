@@ -9,11 +9,14 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import ru.newrav1k.mirea.orderservice.model.entity.Order;
-import ru.newrav1k.mirea.orderservice.model.enums.OrderStatus;
-import ru.newrav1k.mirea.orderservice.service.OrderService;
+import ru.newrav1k.mirea.core.model.event.SagaPaymentFailureEvent;
+import ru.newrav1k.mirea.core.model.event.SagaPaymentSuccessEvent;
 import ru.newrav1k.mirea.core.model.event.SagaProductReservationFailedEvent;
 import ru.newrav1k.mirea.core.model.event.SagaProductReservationSuccessEvent;
+import ru.newrav1k.mirea.orderservice.controller.kafka.producer.OrderCommandProducer;
+import ru.newrav1k.mirea.orderservice.model.dto.OrderResponse;
+import ru.newrav1k.mirea.orderservice.model.enums.OrderStatus;
+import ru.newrav1k.mirea.orderservice.service.OrderService;
 
 @Slf4j
 @Component
@@ -26,6 +29,8 @@ import ru.newrav1k.mirea.core.model.event.SagaProductReservationSuccessEvent;
 @RequiredArgsConstructor
 public class OrderCommandConsumer {
 
+    private final OrderCommandProducer orderCommandProducer;
+
     private final OrderService orderService;
 
     @KafkaHandler
@@ -33,16 +38,13 @@ public class OrderCommandConsumer {
     public void processSuccessReservation(@Payload SagaProductReservationSuccessEvent event) {
         log.info("Processing success reservation: {}", event);
         try {
-            Order order = this.orderService.findOrderById(event.orderId());
+            OrderResponse order = this.orderService.changeStatus(event.orderId(), OrderStatus.APPROVED);
 
-            if (order.getStatus() == OrderStatus.APPROVED) {
-                log.info("Order already approved: {}", event.orderId());
-                return;
-            }
-
-            order.setStatus(OrderStatus.APPROVED);
-
-            // TODO: отправка запроса на оплату в payment-service
+            this.orderCommandProducer.sendPaymentProcess(
+                    order.id(),
+                    order.customerId(),
+                    order.total()
+            );
         } catch (Exception exception) {
             log.error("Error processing reservation", exception);
 
@@ -55,19 +57,24 @@ public class OrderCommandConsumer {
     public void processFailedReservation(@Payload SagaProductReservationFailedEvent event) {
         log.info("Processing failed reservation: {}", event);
         try {
-            Order order = this.orderService.findOrderById(event.orderId());
-
-            if (order.getStatus() == OrderStatus.REJECTED) {
-                log.warn("Order already rejected: {}", event.orderId());
-                return;
-            }
-
-            order.setStatus(OrderStatus.REJECTED);
+            this.orderService.changeStatus(event.orderId(), OrderStatus.REJECTED);
         } catch (Exception exception) {
             log.warn("Error processing reservation", exception);
 
             throw exception;
         }
+    }
+
+    @KafkaHandler
+    public void processSuccessfulPayment(@Payload SagaPaymentSuccessEvent event) {
+        log.info("Processing successful payment: {}", event);
+        this.orderService.changeStatus(event.orderId(), OrderStatus.PAID);
+    }
+
+    @KafkaHandler
+    public void processFailurePayment(@Payload SagaPaymentFailureEvent event) {
+        log.info("Processing failure payment: {}", event);
+        this.orderService.changeStatus(event.orderId(), OrderStatus.REJECTED);
     }
 
     @KafkaHandler(isDefault = true)

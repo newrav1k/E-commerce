@@ -137,6 +137,23 @@ public class OrderService {
                 });
     }
 
+    @Transactional
+    public OrderResponse changeStatus(UUID orderId, OrderStatus status) {
+        log.info("Updating order status by id: {}", orderId);
+        return this.orderRepository.findById(orderId)
+                .map(order -> {
+                    if (order.getStatus().equals(status)) {
+                        log.warn("Order status is already set to '{}'", status);
+                        return order;
+                    }
+                    order.setStatus(status);
+                    return order;
+                })
+                .map(this.orderMapper::toOrderResponse)
+                .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND));
+        // TODO: подправить обновление статуса заказа
+    }
+
     private List<Item> buildItems(Order order,
                                   Map<UUID, ProductResponse> products,
                                   List<CreateOrderRequest.ItemRequest> items) {
