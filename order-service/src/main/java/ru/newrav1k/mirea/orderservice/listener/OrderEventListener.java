@@ -31,8 +31,8 @@ public class OrderEventListener {
                         .map(item -> new ItemInformation(
                                 item.getProductId(),
                                 item.getQuantity()
-                        ))
-                        .toList()
+                        )).toList(),
+                order.getTotal()
         );
     }
 
@@ -44,11 +44,13 @@ public class OrderEventListener {
         this.orderCommandProducer.sendOrderCancelledProcess(
                 order.getId(),
                 order.getCustomerId(),
-                order.getTotal(),
                 order.getItems()
                         .stream()
-                        .map(item -> new ItemInformation(item.getProductId(), item.getQuantity()))
-                        .toList()
+                        .map(item -> new ItemInformation(
+                                item.getProductId(),
+                                item.getQuantity()
+                        )).toList(),
+                order.getTotal()
         );
     }
 
