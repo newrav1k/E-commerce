@@ -8,6 +8,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   liquibase:
     change-log: classpath:/db/changelog/db.changelog-master.yaml
+    enabled: true
   jpa:
     hibernate:
       ddl-auto: create
@@ -23,8 +24,8 @@ payment-service:
       payment-failed: payment.payment.failed.v1 # Ошибка оплаты
 
       # Входящие события
-      payment-process: payment.payment.process.v1 # Для запуска процесса оплаты
       order-cancelled: order.order.cancelled.v1 # Для компенсаций
+      product-reserved: inventory.product.reserved.v1 # Успешная резервация
     group-id: ${spring.application.name}
 
 server:

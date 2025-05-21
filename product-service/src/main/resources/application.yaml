@@ -23,6 +23,7 @@ product-service:
       # Входящие события
       order-created: order.order.created.v1 # Для инициации саги
       order-cancelled: order.order.cancelled.v1 # Для компенсаций
+      payment-failed: payment.payment.failed.v1 # Ошибка оплаты
     group-id: ${spring.application.name}
 
 server:
