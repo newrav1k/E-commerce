@@ -140,14 +140,15 @@ public class OrderService {
     @Transactional
     public void updateStatus(UUID orderId, OrderStatus status) {
         log.info("Updating order status by id: {}", orderId);
-        Order order = this.orderRepository.findById(orderId)
+        OrderStatus orderStatus = this.orderRepository.findStatusById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND));
-        if (order.getStatus().equals(status)) {
-            log.warn("Order status is already set to '{}'", status);
+
+        if (orderStatus == status) {
+            log.warn("Order {} already has status: {}", orderId, status);
             return;
         }
-        order.setStatus(status);
-        this.orderRepository.save(order);
+
+        this.orderRepository.updateStatus(orderId, status);
     }
 
     private List<Item> buildItems(Order order,
