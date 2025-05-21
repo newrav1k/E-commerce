@@ -2,12 +2,16 @@ package ru.newrav1k.mirea.orderservice.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -16,6 +20,7 @@ import ru.newrav1k.mirea.orderservice.event.OrderCancelledEvent;
 import ru.newrav1k.mirea.orderservice.event.OrderChangedEvent;
 import ru.newrav1k.mirea.orderservice.event.OrderCreatedEvent;
 import ru.newrav1k.mirea.orderservice.exception.OrderNotFoundException;
+import ru.newrav1k.mirea.orderservice.exception.ProductClientException;
 import ru.newrav1k.mirea.orderservice.mapper.OrderMapper;
 import ru.newrav1k.mirea.orderservice.model.dto.CreateOrderRequest;
 import ru.newrav1k.mirea.orderservice.model.dto.OrderPayload;
@@ -70,6 +75,12 @@ public class OrderService {
                 .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND));
     }
 
+    @Retryable(
+            backoff = @Backoff(delay = 1000, multiplier = 2),
+            retryFor = {
+                    FeignException.class,
+            }
+    )
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
         log.info("Creating new order with request: {}", request);
@@ -172,6 +183,12 @@ public class OrderService {
             total = total.add(response.price().multiply(BigDecimal.valueOf(item.quantity())));
         }
         return total;
+    }
+
+    @Recover
+    public OrderResponse handleFeignException(FeignException exception, CreateOrderRequest request) {
+        log.warn("recover feign exception: {}", request);
+        throw new ProductClientException("product.service.price.not.available");
     }
 
 }
