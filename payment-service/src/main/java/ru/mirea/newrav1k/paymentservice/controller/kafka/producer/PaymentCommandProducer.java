@@ -25,13 +25,13 @@ public class PaymentCommandProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public void processSuccessPayment(UUID orderId, UUID customerId, BigDecimal total) {
-        log.info("Processing payment success");
+        log.info("Processing payment success topic {}", this.successPaymentProcessedTopic);
         SagaPaymentSuccessEvent event = new SagaPaymentSuccessEvent(orderId, customerId, total);
         this.kafkaTemplate.send(this.successPaymentProcessedTopic, event);
     }
 
     public void processFailurePayment(UUID orderId, UUID customerId, BigDecimal total) {
-        log.info("Processing payment failure");
+        log.info("Processing payment failure topic {}", this.failurePaymentFailedTopic);
         SagaPaymentFailureEvent event = new SagaPaymentFailureEvent(orderId, customerId, total);
         this.kafkaTemplate.send(this.failurePaymentFailedTopic, event);
     }

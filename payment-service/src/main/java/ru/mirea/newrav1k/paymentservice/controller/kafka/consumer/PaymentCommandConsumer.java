@@ -9,12 +9,12 @@ import org.springframework.stereotype.Component;
 import ru.mirea.newrav1k.paymentservice.controller.kafka.producer.PaymentCommandProducer;
 import ru.mirea.newrav1k.paymentservice.service.BankAccountService;
 import ru.newrav1k.mirea.core.model.event.SagaCreationCancelledEvent;
-import ru.newrav1k.mirea.core.model.event.SagaPaymentProcessingEvent;
+import ru.newrav1k.mirea.core.model.event.SagaProductReservationSuccessEvent;
 
 @Slf4j
 @Component
 @KafkaListener(topics = {
-        "${payment-service.kafka.topics.payment-process}",
+        "${payment-service.kafka.topics.product-reserved}",
         "${payment-service.kafka.topics.order-cancelled}"
 }, groupId = "${payment-service.kafka.group-id}")
 @RequiredArgsConstructor
@@ -25,10 +25,9 @@ public class PaymentCommandConsumer {
     private final BankAccountService bankAccountService;
 
     @KafkaHandler
-    public void processPayment(@Payload SagaPaymentProcessingEvent event) {
-        log.warn("Processing payment: {}", event);
+    public void processProductReserved(@Payload SagaProductReservationSuccessEvent event) {
+        log.info("Received product reservation success event: {}", event);
         this.bankAccountService.substanceAmount(event.customerId(), event.orderId(), event.total());
-
         this.paymentCommandProducer.processSuccessPayment(event.orderId(), event.customerId(), event.total());
     }
 
@@ -36,8 +35,7 @@ public class PaymentCommandConsumer {
     public void processOrderCancelled(@Payload SagaCreationCancelledEvent event) {
         log.warn("Processing order cancelled: {}", event);
         this.bankAccountService.depositAmount(event.customerId(), event.orderId(), event.total());
-
-        this.paymentCommandProducer.processFailurePayment(event.customerId(), event.orderId(), event.total());
+        this.paymentCommandProducer.processFailurePayment(event.orderId(), event.customerId(), event.total());
     }
 
 }
