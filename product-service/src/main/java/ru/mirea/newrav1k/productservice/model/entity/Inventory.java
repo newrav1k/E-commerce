@@ -31,14 +31,14 @@ public class Inventory extends BaseEntity {
 
     public void reserveQuantity(int quantity) {
         if (this.quantity - this.reservedQuantity < quantity) {
-            throw new IllegalArgumentException("Not enough available quantity");
+            throw new IllegalArgumentException("Quantity exceeds reserved quantity");
         }
         this.reservedQuantity += quantity;
     }
 
     public void unreserveQuantity(int quantity) {
         if (this.reservedQuantity < quantity) {
-            throw new IllegalArgumentException("Cannot unreserve more than reserved");
+            throw new IllegalArgumentException("Quantity exceeds reserved quantity");
         }
         this.reservedQuantity -= quantity;
     }

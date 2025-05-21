@@ -37,7 +37,7 @@ public class Product extends BaseEntity {
     @Column(name = "price", precision = 10, scale = 2)
     private BigDecimal price;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
     private List<Inventory> inventories;
 
 }
