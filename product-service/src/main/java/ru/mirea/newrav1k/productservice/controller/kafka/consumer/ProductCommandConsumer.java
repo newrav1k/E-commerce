@@ -14,12 +14,14 @@ import ru.mirea.newrav1k.productservice.model.entity.Inventory;
 import ru.mirea.newrav1k.productservice.service.InventoryService;
 import ru.newrav1k.mirea.core.model.event.SagaCreationCancelledEvent;
 import ru.newrav1k.mirea.core.model.event.SagaOrderCreationEvent;
+import ru.newrav1k.mirea.core.model.event.SagaPaymentFailureEvent;
 
 @Slf4j
 @Component
 @KafkaListener(topics = {
         "${product-service.kafka.topics.order-created}",
-        "${product-service.kafka.topics.order-cancelled}"
+        "${product-service.kafka.topics.order-cancelled}",
+        "${product-service.kafka.topics.payment-failed}"
 }, groupId = "${product-service.kafka.group-id}")
 @RequiredArgsConstructor
 public class ProductCommandConsumer {
@@ -37,11 +39,10 @@ public class ProductCommandConsumer {
                 Inventory inventory = this.inventoryService.findInventoryByProductId(product.productId());
                 inventory.reserveQuantity(product.quantity());
             }
-            this.productCommandProducer.processSuccessfulReserved(event.orderId(), event.customerId());
+            this.productCommandProducer.processSuccessReserved(event.orderId(), event.customerId(), event.total());
         } catch (Exception exception) {
             log.error("Error while processing SagaOrderCreatedEvent", exception);
             this.productCommandProducer.processFailureReserved(event.orderId(), event.customerId(), exception.getMessage());
-
             throw exception;
         }
     }
@@ -55,11 +56,17 @@ public class ProductCommandConsumer {
                 Inventory inventory = this.inventoryService.findInventoryByProductId(item.productId());
                 inventory.unreserveQuantity(item.quantity());
             }
+            // TODO: компенсацию средств при отмене заказа
         } catch (Exception exception) {
             log.error("Error while processing SagaProductReservationSuccessEvent", exception);
-
             throw exception;
         }
+    }
+
+    @KafkaHandler
+    public void processFailurePayment(@Payload SagaPaymentFailureEvent event) {
+        log.info("Received payment failure event: {}", event);
+        // TODO: обработку сбоя при оплате
     }
 
     @KafkaHandler(isDefault = true)
