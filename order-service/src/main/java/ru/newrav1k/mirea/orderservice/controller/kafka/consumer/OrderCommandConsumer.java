@@ -9,19 +9,15 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import ru.newrav1k.mirea.core.model.event.SagaPaymentFailureEvent;
 import ru.newrav1k.mirea.core.model.event.SagaPaymentSuccessEvent;
 import ru.newrav1k.mirea.core.model.event.SagaProductReservationFailedEvent;
-import ru.newrav1k.mirea.core.model.event.SagaProductReservationSuccessEvent;
-import ru.newrav1k.mirea.orderservice.controller.kafka.producer.OrderCommandProducer;
-import ru.newrav1k.mirea.orderservice.model.dto.OrderResponse;
+import ru.newrav1k.mirea.orderservice.exception.OrderNotFoundException;
 import ru.newrav1k.mirea.orderservice.model.enums.OrderStatus;
 import ru.newrav1k.mirea.orderservice.service.OrderService;
 
 @Slf4j
 @Component
 @KafkaListener(topics = {
-        "${order-service.kafka.topics.product-reserved}",
         "${order-service.kafka.topics.product-failed}",
         "${order-service.kafka.topics.payment-processed}",
         "${order-service.kafka.topics.payment-failed}",
@@ -29,52 +25,39 @@ import ru.newrav1k.mirea.orderservice.service.OrderService;
 @RequiredArgsConstructor
 public class OrderCommandConsumer {
 
-    private final OrderCommandProducer orderCommandProducer;
-
     private final OrderService orderService;
 
     @KafkaHandler
-    @Transactional(rollbackFor = {Exception.class})
-    public void processSuccessReservation(@Payload SagaProductReservationSuccessEvent event) {
-        log.info("Processing success reservation: {}", event);
-        try {
-            OrderResponse order = this.orderService.changeStatus(event.orderId(), OrderStatus.APPROVED);
-
-            this.orderCommandProducer.sendPaymentProcess(
-                    order.id(),
-                    order.customerId(),
-                    order.total()
-            );
-        } catch (Exception exception) {
-            log.error("Error processing reservation", exception);
-
-            throw exception;
-        }
-    }
-
-    @KafkaHandler
-    @Transactional(rollbackFor = {Exception.class})
+    @Transactional
     public void processFailedReservation(@Payload SagaProductReservationFailedEvent event) {
         log.info("Processing failed reservation: {}", event);
         try {
-            this.orderService.changeStatus(event.orderId(), OrderStatus.REJECTED);
+            this.orderService.updateStatus(event.orderId(), OrderStatus.REJECTED);
+        } catch (OrderNotFoundException exception) {
+            log.error("Order not found: {}", exception.getMessage(), exception);
+            throw exception;
         } catch (Exception exception) {
-            log.warn("Error processing reservation", exception);
-
+            log.error("Error processing reservation", exception);
             throw exception;
         }
     }
 
     @KafkaHandler
-    public void processSuccessfulPayment(@Payload SagaPaymentSuccessEvent event) {
+    @Transactional
+    public void processSuccessPayment(@Payload SagaPaymentSuccessEvent event) {
         log.info("Processing successful payment: {}", event);
-        this.orderService.changeStatus(event.orderId(), OrderStatus.PAID);
-    }
+        try {
+            this.orderService.updateStatus(event.orderId(), OrderStatus.PAID);
 
-    @KafkaHandler
-    public void processFailurePayment(@Payload SagaPaymentFailureEvent event) {
-        log.info("Processing failure payment: {}", event);
-        this.orderService.changeStatus(event.orderId(), OrderStatus.REJECTED);
+            // TODO: уведомление о создании заказа
+
+        } catch (OrderNotFoundException exception) {
+            log.error("Order not found: {}", exception.getMessage(), exception);
+            throw exception;
+        } catch (Exception exception) {
+            log.error("Error processing success payment", exception);
+            throw exception;
+        }
     }
 
     @KafkaHandler(isDefault = true)
