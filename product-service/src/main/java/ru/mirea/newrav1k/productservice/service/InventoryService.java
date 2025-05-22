@@ -130,4 +130,20 @@ public class InventoryService {
         }
     }
 
+    @Transactional
+    public void updateReservation(UUID productId, Integer quantity, boolean reserve) {
+        if (quantity < 0) {
+            throw new IllegalArgumentException("Quantity cannot be negative");
+        }
+        log.info("Reservation {} for product {} ", quantity, productId);
+        Inventory inventory = this.inventoryRepository.findByProduct_Id(productId)
+                .orElseThrow(() -> new InventoryNotFoundException(INVENTORY_NOT_FOUND));
+        if (reserve) {
+            inventory.reserveQuantity(quantity);
+        } else {
+            inventory.unreserveQuantity(quantity);
+        }
+        this.inventoryRepository.save(inventory);
+    }
+
 }
