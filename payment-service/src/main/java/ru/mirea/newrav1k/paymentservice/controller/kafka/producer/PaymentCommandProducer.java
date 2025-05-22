@@ -7,8 +7,10 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import ru.newrav1k.mirea.core.model.event.SagaPaymentFailureEvent;
 import ru.newrav1k.mirea.core.model.event.SagaPaymentSuccessEvent;
+import ru.newrav1k.mirea.core.model.payload.ItemInformation;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -26,13 +28,13 @@ public class PaymentCommandProducer {
 
     public void processSuccessPayment(UUID orderId, UUID customerId, BigDecimal total) {
         log.info("Processing payment success topic {}", this.successPaymentProcessedTopic);
-        SagaPaymentSuccessEvent event = new SagaPaymentSuccessEvent(orderId, customerId, total);
+        SagaPaymentSuccessEvent event = new SagaPaymentSuccessEvent(UUID.randomUUID(), orderId, customerId, total);
         this.kafkaTemplate.send(this.successPaymentProcessedTopic, event);
     }
 
-    public void processFailurePayment(UUID orderId, UUID customerId, BigDecimal total) {
+    public void processFailurePayment(UUID orderId, UUID customerId, List<ItemInformation> products, String reason) {
         log.info("Processing payment failure topic {}", this.failurePaymentFailedTopic);
-        SagaPaymentFailureEvent event = new SagaPaymentFailureEvent(orderId, customerId, total);
+        SagaPaymentFailureEvent event = new SagaPaymentFailureEvent(UUID.randomUUID(), orderId, customerId, products, reason);
         this.kafkaTemplate.send(this.failurePaymentFailedTopic, event);
     }
 
