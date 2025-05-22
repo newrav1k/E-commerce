@@ -1,12 +1,23 @@
 package ru.newrav1k.mirea.core.model.event;
 
-import java.math.BigDecimal;
+import ru.newrav1k.mirea.core.model.payload.ItemInformation;
+
+import java.util.List;
 import java.util.UUID;
 
+/**
+ * @param eventId
+ * @param orderId
+ * @param customerId
+ * @param products
+ * @param reason
+ */
 public record SagaPaymentFailureEvent(
+        UUID eventId,
         UUID orderId,
         UUID customerId,
-        BigDecimal total
+        List<ItemInformation> products,
+        String reason
 ) {
 
 }

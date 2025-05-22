@@ -6,7 +6,15 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-public record SagaCreationCancelledEvent(
+/**
+ * @param eventId
+ * @param orderId
+ * @param customerId
+ * @param products
+ * @param total
+ */
+public record SagaOrderCancelledEvent(
+        UUID eventId,
         UUID orderId,
         UUID customerId,
         List<ItemInformation> products,
