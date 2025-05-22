@@ -1,9 +1,10 @@
 package ru.mirea.newrav1k.paymentservice.model.entity;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -24,10 +25,16 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "t_payments", schema = "payment_management")
+@Table(
+        name = "t_payments",
+        schema = "payment_management",
+        indexes = {
+                @Index(name = "idx_payment_order_ids", columnList = "order_id")
+        }
+)
 public class PaymentTransaction extends BaseEntity {
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_bank_id", referencedColumnName = "id")
     private BankAccount sourceBankAccount;
 
