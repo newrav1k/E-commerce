@@ -17,7 +17,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     void updateStatus(UUID orderId, OrderStatus status);
 
     @Modifying
-    @Query("update Order o set o.status = :status, o.reason = :reason")
+    @Query("update Order o set o.status = :status, o.reason = :reason where o.id = :orderId")
     void updateReason(UUID orderId, OrderStatus status, String reason);
 
 }
