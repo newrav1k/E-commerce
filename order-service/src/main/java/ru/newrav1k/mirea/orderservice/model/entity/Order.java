@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.Index;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -24,7 +25,14 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "t_orders", schema = "order_management")
+@Table(
+        name = "t_orders",
+        schema = "order_management",
+        indexes = {
+                @Index(name = "idx_order_ids", columnList = "id"),
+                @Index(name = "idx_order_status", columnList = "status")
+        }
+)
 @EntityListeners(AuditingEntityListener.class)
 public class Order extends BaseEntity {
 
@@ -40,5 +48,8 @@ public class Order extends BaseEntity {
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<Item> items;
+
+    @Column(name = "reason")
+    private String reason;
 
 }
