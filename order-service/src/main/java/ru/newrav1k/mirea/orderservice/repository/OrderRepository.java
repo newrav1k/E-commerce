@@ -7,16 +7,17 @@ import org.springframework.stereotype.Repository;
 import ru.newrav1k.mirea.orderservice.model.entity.Order;
 import ru.newrav1k.mirea.orderservice.model.enums.OrderStatus;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, UUID> {
 
-    Optional<OrderStatus> findStatusById(UUID orderId);
-
     @Modifying
     @Query("update Order o set o.status = :status where o.id = :orderId")
     void updateStatus(UUID orderId, OrderStatus status);
+
+    @Modifying
+    @Query("update Order o set o.status = :status, o.reason = :reason")
+    void updateReason(UUID orderId, OrderStatus status, String reason);
 
 }

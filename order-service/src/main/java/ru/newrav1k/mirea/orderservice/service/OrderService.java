@@ -6,6 +6,8 @@ import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.dao.TransientDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -33,6 +35,7 @@ import ru.newrav1k.mirea.orderservice.service.client.ProductClient;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,15 +67,13 @@ public class OrderService {
 
     public OrderResponse findById(UUID orderId) {
         log.info("Finding order with id: {}", orderId);
-        Order order = this.orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND));
+        Order order = getOrderByIdOrThrow(orderId);
         return this.orderMapper.toOrderResponse(order);
     }
 
     public Order findOrderById(UUID orderId) {
         log.info("Finding order with id: {}", orderId);
-        return this.orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND));
+        return getOrderByIdOrThrow(orderId);
     }
 
     @Retryable(
@@ -87,9 +88,19 @@ public class OrderService {
         Order order = new Order();
 
         Map<UUID, ProductResponse> products = new HashMap<>();
+        List<UUID> failedIds = new ArrayList<>();
         for (var item : request.items()) {
-            ProductResponse response = this.productClient.findProductById(item.productId());
-            products.put(item.productId(), response);
+            try {
+                ProductResponse response = this.productClient.findProductById(item.productId());
+                products.put(item.productId(), response);
+            } catch (FeignException exception) {
+                log.error("Cannot find product with id: {}", item.productId());
+                failedIds.add(item.productId());
+            }
+        }
+
+        if (!failedIds.isEmpty()) {
+            throw new ProductClientException("Cannot find products: " + failedIds);
         }
 
         order.setCustomerId(request.customerId());
@@ -105,6 +116,12 @@ public class OrderService {
         return this.orderMapper.toOrderResponse(order);
     }
 
+    @Retryable(
+            retryFor = {
+                    OptimisticLockingFailureException.class,
+                    TransientDataAccessException.class
+            }
+    )
     @Transactional
     public OrderResponse updateOrder(UUID orderId, OrderPayload payload) {
         log.info("Updating order with id: {}", orderId);
@@ -121,11 +138,16 @@ public class OrderService {
         return this.orderMapper.toOrderResponse(order);
     }
 
+    @Retryable(
+            retryFor = {
+                    OptimisticLockingFailureException.class,
+                    TransientDataAccessException.class
+            }
+    )
     @Transactional(rollbackFor = IOException.class)
     public OrderResponse updateOrder(UUID orderId, JsonNode patchNode) {
         log.info("Updating order with id: {}", orderId);
-        Order order = this.orderRepository.findById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND));
+        Order order = getOrderByIdOrThrow(orderId);
         try {
             this.objectMapper.readerForUpdating(order).readValue(patchNode);
 
@@ -138,28 +160,57 @@ public class OrderService {
         }
     }
 
+    @Retryable(
+            retryFor = {
+                    OptimisticLockingFailureException.class,
+                    TransientDataAccessException.class
+            }
+    )
     @Transactional
     public void cancelById(UUID orderId) {
         log.info("Deleting order with id: {}", orderId);
-        this.orderRepository.findById(orderId)
-                .ifPresent(order -> {
-                    this.publisher.publishEvent(new OrderCancelledEvent(this, order));
-                    order.setStatus(OrderStatus.CANCELLED);
-                });
+        Order order = getOrderByIdOrThrow(orderId);
+
+        order.setStatus(OrderStatus.CANCELLED);
+        this.publisher.publishEvent(new OrderCancelledEvent(this, order));
+
+        this.orderRepository.save(order);
     }
 
+    @Retryable(
+            retryFor = {
+                    OptimisticLockingFailureException.class,
+                    TransientDataAccessException.class
+            }
+    )
     @Transactional
     public void updateStatus(UUID orderId, OrderStatus status) {
         log.info("Updating order status by id: {}", orderId);
-        OrderStatus orderStatus = this.orderRepository.findStatusById(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND));
+        Order order = getOrderByIdOrThrow(orderId);
 
-        if (orderStatus == status) {
+        if (order.getStatus() == status) {
             log.warn("Order {} already has status: {}", orderId, status);
             return;
         }
 
         this.orderRepository.updateStatus(orderId, status);
+    }
+
+    @Retryable(
+            retryFor = {
+                    OptimisticLockingFailureException.class,
+                    TransientDataAccessException.class
+            }
+    )
+    @Transactional
+    public void setFailureTransaction(UUID orderId, OrderStatus status, String reason) {
+        log.info("Updating order status by id: {}", orderId);
+        Order order = getOrderByIdOrThrow(orderId);
+        if (order.getStatus() == status && order.getReason().equals(reason)) {
+            log.warn("Order {} already has status: {}", orderId, status);
+            return;
+        }
+        this.orderRepository.updateReason(orderId, status, reason);
     }
 
     private List<Item> buildItems(Order order,
@@ -176,19 +227,24 @@ public class OrderService {
 
     public BigDecimal calculateTotalPrice(Map<UUID, ProductResponse> products,
                                           List<CreateOrderRequest.ItemRequest> items) {
-        log.info("Calculating total of orders");
-        BigDecimal total = BigDecimal.ZERO;
-        for (var item : items) {
-            ProductResponse response = products.get(item.productId());
-            total = total.add(response.price().multiply(BigDecimal.valueOf(item.quantity())));
-        }
-        return total;
+        log.info("Calculating total of orders {}", items);
+        return items.stream()
+                .map(item -> {
+                    ProductResponse response = products.get(item.productId());
+                    return response.price().multiply(BigDecimal.valueOf(item.quantity()));
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     @Recover
     public OrderResponse handleFeignException(FeignException exception, CreateOrderRequest request) {
         log.warn("recover feign exception: {}", request);
         throw new ProductClientException("product.service.price.not.available");
+    }
+
+    private Order getOrderByIdOrThrow(UUID orderId) {
+        return this.orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(ORDER_NOT_FOUND));
     }
 
 }
