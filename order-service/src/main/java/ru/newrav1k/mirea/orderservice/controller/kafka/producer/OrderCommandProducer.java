@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
-import ru.newrav1k.mirea.core.model.event.SagaCreationCancelledEvent;
+import ru.newrav1k.mirea.core.model.event.SagaOrderCancelledEvent;
 import ru.newrav1k.mirea.core.model.event.SagaOrderCreationEvent;
 import ru.newrav1k.mirea.core.model.payload.ItemInformation;
 
@@ -28,13 +28,13 @@ public class OrderCommandProducer {
 
     public void sendOrderCreatedProcess(UUID orderId, UUID customerId, List<ItemInformation> items, BigDecimal total) {
         log.info("Sending order created process message");
-        SagaOrderCreationEvent event = new SagaOrderCreationEvent(orderId, customerId, items, total);
+        SagaOrderCreationEvent event = new SagaOrderCreationEvent(UUID.randomUUID(), orderId, customerId, items, total);
         this.kafkaTemplate.send(this.orderCreatedTopic, event);
     }
 
     public void sendOrderCancelledProcess(UUID orderId, UUID customerId, List<ItemInformation> items, BigDecimal total) {
         log.info("Sending order cancelled process message");
-        SagaCreationCancelledEvent event = new SagaCreationCancelledEvent(orderId, customerId, items, total);
+        SagaOrderCancelledEvent event = new SagaOrderCancelledEvent(UUID.randomUUID(), orderId, customerId, items, total);
         this.kafkaTemplate.send(this.orderCancelledTopic, event);
     }
 

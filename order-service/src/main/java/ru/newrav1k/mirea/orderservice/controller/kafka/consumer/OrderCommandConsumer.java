@@ -2,13 +2,15 @@ package ru.newrav1k.mirea.orderservice.controller.kafka.consumer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.dao.TransientDataAccessException;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.annotation.RetryableTopic;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import ru.newrav1k.mirea.core.model.event.SagaPaymentSuccessEvent;
 import ru.newrav1k.mirea.core.model.event.SagaProductReservationFailedEvent;
 import ru.newrav1k.mirea.orderservice.exception.OrderNotFoundException;
@@ -18,21 +20,28 @@ import ru.newrav1k.mirea.orderservice.service.OrderService;
 @Slf4j
 @Component
 @KafkaListener(topics = {
-        "${order-service.kafka.topics.product-failed}",
         "${order-service.kafka.topics.payment-processed}",
-        "${order-service.kafka.topics.payment-failed}",
+        "${order-service.kafka.topics.product-failed}"
 }, groupId = "${order-service.kafka.group-id}")
 @RequiredArgsConstructor
 public class OrderCommandConsumer {
 
     private final OrderService orderService;
 
+    @RetryableTopic(
+            include = {
+                    OptimisticLockingFailureException.class,
+                    TransientDataAccessException.class
+            },
+            exclude = {
+                    OrderNotFoundException.class
+            }
+    )
     @KafkaHandler
-    @Transactional
     public void processFailedReservation(@Payload SagaProductReservationFailedEvent event) {
         log.info("Processing failed reservation: {}", event);
         try {
-            this.orderService.updateStatus(event.orderId(), OrderStatus.REJECTED);
+            this.orderService.setFailureTransaction(event.orderId(), OrderStatus.REJECTED, event.reason());
         } catch (OrderNotFoundException exception) {
             log.error("Order not found: {}", exception.getMessage(), exception);
             throw exception;
@@ -42,8 +51,16 @@ public class OrderCommandConsumer {
         }
     }
 
+    @RetryableTopic(
+            include = {
+                    OptimisticLockingFailureException.class,
+                    TransientDataAccessException.class
+            },
+            exclude = {
+                    OrderNotFoundException.class
+            }
+    )
     @KafkaHandler
-    @Transactional
     public void processSuccessPayment(@Payload SagaPaymentSuccessEvent event) {
         log.info("Processing successful payment: {}", event);
         try {
