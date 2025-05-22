@@ -50,16 +50,18 @@ public class PaymentCommandConsumer {
             return;
         }
 
+        boolean fundsWithdrawn = false;
+
         try {
-            handleReservation(event);
+            fundsWithdrawn = handleReservation(event);
 
             this.idempotencyService.markProcessed(event.eventId());
         } catch (InsufficientFundsException exception) {
             log.error("Insufficient funds to process product reservation success event : {}", event.orderId(), exception);
-            this.paymentCommandProducer.processFailurePayment(event.orderId(), event.customerId(), event.items(), "Insufficient funds");
+            handlePaymentFailure(event, fundsWithdrawn, "Insufficient funds");
         } catch (Exception exception) {
             log.error("Error processing product reservation success event : {}", event.orderId(), exception);
-            handlePaymentFailure(event, "Error while processing product reservation");
+            handlePaymentFailure(event, fundsWithdrawn, "Error while processing product reservation");
         }
     }
 
@@ -85,19 +87,24 @@ public class PaymentCommandConsumer {
         this.idempotencyService.markProcessed(event.eventId());
     }
 
-    private void handleReservation(SagaProductReservationSuccessEvent event) {
+    private boolean handleReservation(SagaProductReservationSuccessEvent event) {
         try {
             this.bankAccountService.substanceAmount(event.customerId(), event.orderId(), event.total());
+            this.paymentCommandProducer.processSuccessPayment(event.orderId(), event.customerId(), event.total());
+            return true;
         } catch (InsufficientFundsException exception) {
             log.error("Failed to subtract funds to reservation. Skipping processing reservation.");
             throw exception;
         }
-        this.paymentCommandProducer.processSuccessPayment(event.orderId(), event.customerId(), event.total());
     }
 
-    private void handlePaymentFailure(SagaProductReservationSuccessEvent event, String reason) {
-        // TODO: исправить возврат средств, если их не было изначально
-        this.bankAccountService.depositAmount(event.customerId(), event.orderId(), event.total());
+    private void handlePaymentFailure(SagaProductReservationSuccessEvent event, boolean fundsWithdrawn, String reason) {
+        if (fundsWithdrawn) {
+            log.info("Refunding withdrawn funds for order {}", event.orderId());
+            this.bankAccountService.depositAmount(event.customerId(), event.orderId(), event.total());
+        } else {
+            log.info("No withdrawal performed. Skipping refund for order {}", event.orderId());
+        }
         this.paymentCommandProducer.processFailurePayment(event.orderId(), event.customerId(), event.items(), reason);
     }
 

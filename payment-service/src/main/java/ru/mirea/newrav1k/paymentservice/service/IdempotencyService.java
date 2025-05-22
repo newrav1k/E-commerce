@@ -18,10 +18,13 @@ public class IdempotencyService {
     private final ProcessedEventRepository processedEventRepository;
 
     public Boolean isProcessed(UUID eventId) {
+        log.info("Checking if processed event exists with id {}", eventId);
         return this.processedEventRepository.existsById(eventId);
     }
 
+    @Transactional
     public void markProcessed(UUID eventId) {
+        log.info("Marked processed event: {}", eventId);
         this.processedEventRepository.save(new ProcessedEvent(eventId));
     }
 
