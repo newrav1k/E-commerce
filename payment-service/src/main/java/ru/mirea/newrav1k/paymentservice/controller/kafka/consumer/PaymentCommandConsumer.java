@@ -81,9 +81,7 @@ public class PaymentCommandConsumer {
             log.warn("Processing order already processed. Skipping processing order cancelled.");
             return;
         }
-
         this.bankAccountService.depositAmount(event.customerId(), event.orderId(), event.total());
-        this.paymentCommandProducer.processFailurePayment(event.orderId(), event.customerId(), event.products(), "Order cancelled");
         this.idempotencyService.markProcessed(event.eventId());
     }
 

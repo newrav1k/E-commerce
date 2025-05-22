@@ -10,6 +10,7 @@ import ru.newrav1k.mirea.orderservice.event.OrderCancelledEvent;
 import ru.newrav1k.mirea.orderservice.event.OrderChangedEvent;
 import ru.newrav1k.mirea.orderservice.event.OrderCreatedEvent;
 import ru.newrav1k.mirea.orderservice.model.entity.Order;
+import ru.newrav1k.mirea.orderservice.model.enums.OrderStatus;
 
 @Slf4j
 @Component
@@ -40,6 +41,9 @@ public class OrderEventListener {
     public void onOrderCancelled(OrderCancelledEvent event) {
         log.info("Order cancelled event: {}", event);
         Order order = event.getOrder();
+
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setReason("Order cancelled");
 
         this.orderCommandProducer.sendOrderCancelledProcess(
                 order.getId(),
