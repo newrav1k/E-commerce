@@ -1,3 +1,19 @@
 spring:
   application:
     name: notification-service
+  kafka:
+    bootstrap-servers: localhost:9092
+  mail:
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+
+notification-service:
+  services:
+      user-service: http://localhost:8084
+  kafka:
+    topics:
+      # Входящие события
+      order-confirmed: order.order.confirmed.v1 # Финальное подтверждение
+
+server:
+  port: 8085
