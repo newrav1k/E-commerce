@@ -24,6 +24,8 @@ public class NotificationService {
 
     private final UserClient userClient;
 
+    private final IdempotencyService idempotencyService;
+
     @Async
     @Retryable(retryFor = {
             MailSendException.class,
@@ -41,6 +43,7 @@ public class NotificationService {
         message.setText("Dear customer, your order has been successfully confirmed.");
 
         this.mailSender.send(message);
+        this.idempotencyService.markProcessed(event.eventId());
     }
 
     @Recover

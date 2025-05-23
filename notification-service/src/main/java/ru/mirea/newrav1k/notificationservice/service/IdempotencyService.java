@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.util.UUID;
 
 @Slf4j
@@ -17,8 +16,7 @@ public class IdempotencyService {
 
     public Boolean isProcessed(UUID eventId) {
         log.info("Checking if processed eventId is {}", eventId);
-        return this.redisTemplate.opsForValue()
-                .setIfAbsent(eventId.toString(), Boolean.TRUE, Duration.ofHours(1));
+        return this.redisTemplate.hasKey(eventId.toString());
     }
 
     public void markProcessed(UUID eventId) {
