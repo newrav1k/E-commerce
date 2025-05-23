@@ -13,6 +13,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 import ru.newrav1k.mirea.core.model.event.SagaPaymentSuccessEvent;
 import ru.newrav1k.mirea.core.model.event.SagaProductReservationFailedEvent;
+import ru.newrav1k.mirea.orderservice.controller.kafka.producer.OrderCommandProducer;
 import ru.newrav1k.mirea.orderservice.exception.OrderNotFoundException;
 import ru.newrav1k.mirea.orderservice.model.enums.OrderStatus;
 import ru.newrav1k.mirea.orderservice.service.OrderService;
@@ -25,6 +26,8 @@ import ru.newrav1k.mirea.orderservice.service.OrderService;
 }, groupId = "${order-service.kafka.group-id}")
 @RequiredArgsConstructor
 public class OrderCommandConsumer {
+
+    private final OrderCommandProducer orderCommandProducer;
 
     private final OrderService orderService;
 
@@ -66,8 +69,7 @@ public class OrderCommandConsumer {
         try {
             this.orderService.updateStatus(event.orderId(), OrderStatus.PAID);
 
-            // TODO: уведомление о создании заказа
-
+            this.orderCommandProducer.sendOrderConfirmedProcess(event.orderId(), event.customerId(), event.total());
         } catch (OrderNotFoundException exception) {
             log.error("Order not found: {}", exception.getMessage(), exception);
             throw exception;
