@@ -2,6 +2,7 @@ package ru.mirea.newrav1k.paymentservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.mirea.newrav1k.paymentservice.model.entity.ProcessedEvent;
@@ -26,6 +27,19 @@ public class IdempotencyService {
     public void markProcessed(UUID eventId) {
         log.info("Marked processed event: {}", eventId);
         this.processedEventRepository.save(new ProcessedEvent(eventId));
+    }
+
+    @Transactional
+    public void deleteProcessed(UUID eventId) {
+        log.info("Deleting processed event: {}", eventId);
+        this.processedEventRepository.deleteById(eventId);
+    }
+
+    @Transactional
+    public void deleteBatchProcessed(Integer batchSize) {
+        log.info("Deleting batch of {} events", batchSize);
+        PageRequest pageable = PageRequest.of(0, batchSize);
+        this.processedEventRepository.deleteAll(this.processedEventRepository.findAll(pageable));
     }
 
 }
