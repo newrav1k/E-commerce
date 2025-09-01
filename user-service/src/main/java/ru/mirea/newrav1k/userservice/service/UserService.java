@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import ru.mirea.newrav1k.userservice.exception.UserNotFoundException;
 import ru.mirea.newrav1k.userservice.mapper.UserMapper;
 import ru.mirea.newrav1k.userservice.model.dto.UserPayload;
 import ru.mirea.newrav1k.userservice.model.entity.User;
@@ -53,7 +54,7 @@ public class UserService {
     public UserResponse findById(UUID userId) {
         log.info("Finding user by id: {}", userId);
         User user = this.userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new UserNotFoundException("user.not.found"));
         return this.userMapper.toUserResponse(user);
     }
 
@@ -61,7 +62,7 @@ public class UserService {
     public UserResponse update(UUID userId, UserPayload payload) {
         log.info("Updating user with id {} by payload: {}", userId, payload);
         User user = this.userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new UserNotFoundException("user.not.found"));
         user.setUsername(payload.username());
         return this.userMapper.toUserResponse(user);
     }
@@ -70,7 +71,7 @@ public class UserService {
     public UserResponse update(UUID userId, JsonNode jsonNode) {
         log.info("Updating user with id {} by jsonNode: {}", userId, jsonNode);
         User user = this.userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new UserNotFoundException("user.not.found"));
         try {
             this.objectMapper.readerForUpdating(user).readValue(jsonNode);
 
