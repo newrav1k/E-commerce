@@ -1,6 +1,8 @@
 package ru.newrav1k.mirea.orderservice.controller.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +21,10 @@ import ru.newrav1k.mirea.orderservice.service.ItemService;
 
 import java.util.UUID;
 
+@Tag(
+        name = "Item Controller",
+        description = "Контроллер для управления определёнными позициями в заказе"
+)
 @Slf4j
 @RestController
 @RequestMapping("/api/items/{itemId}")
@@ -27,12 +33,20 @@ public class ItemController {
 
     private final ItemService itemService;
 
+    @Operation(
+            summary = "Загрузка позиции заказа",
+            description = "Загружает позицию заказа по её идентификатору"
+    )
     @GetMapping
     public ResponseEntity<ItemResponse> loadItem(@PathVariable("itemId") UUID itemId) {
         log.info("Loading item with id: {}", itemId);
         return ResponseEntity.ok(this.itemService.findById(itemId));
     }
 
+    @Operation(
+            summary = "Обновление позиции заказа",
+            description = "Полностью обновляет позицию заказа по её идентификатору"
+    )
     @PutMapping
     public ResponseEntity<ItemResponse> updateItem(@PathVariable("itemId") UUID itemId,
                                                    @Valid @RequestBody UpdateItemRequest request) {
@@ -40,6 +54,10 @@ public class ItemController {
         return ResponseEntity.ok(this.itemService.updateItem(itemId, request));
     }
 
+    @Operation(
+            summary = "Обновление позиции заказа",
+            description = "Частично обновляет позицию заказа по её идентификатору"
+    )
     @PatchMapping
     public ResponseEntity<ItemResponse> patchItem(@PathVariable("itemId") UUID itemId,
                                                   @RequestBody JsonNode patchNode) {
@@ -47,6 +65,10 @@ public class ItemController {
         return ResponseEntity.ok(this.itemService.updateItem(itemId, patchNode));
     }
 
+    @Operation(
+            summary = "Удаляет позицию из заказа",
+            description = "Удаляет позицию заказа по её идентификатору"
+    )
     @DeleteMapping
     public ResponseEntity<Void> deleteItem(@PathVariable("itemId") UUID itemId) {
         log.info("Deleting item with id: {}", itemId);

@@ -1,5 +1,6 @@
 package ru.newrav1k.mirea.orderservice.controller.rest;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import ru.newrav1k.mirea.orderservice.model.dto.CreateItemRequest;
 import ru.newrav1k.mirea.orderservice.model.dto.ItemResponse;
 import ru.newrav1k.mirea.orderservice.service.ItemService;
 
+@Hidden
 @Slf4j
 @RestController
 @RequestMapping("/api/items")
